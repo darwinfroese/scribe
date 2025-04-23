@@ -1,0 +1,7 @@
+scribe
+# because apparently git views this as being ignored
+# by the line above
+!cmd/scribe
+
+# mac os files
+**/.DS_Store
