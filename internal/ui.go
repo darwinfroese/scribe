@@ -7,6 +7,11 @@ import (
 	"github.com/rivo/tview"
 )
 
+const (
+	hideCompleted  = true
+	hideIncomplete = false
+)
+
 func Run() {
 	app := tview.NewApplication()
 
@@ -38,9 +43,10 @@ func Run() {
 		AddPage("list", flex, true, true).
 		AddPage("form", modal(addTaskForm, 50, 12), true, false)
 
-	refreshTaskListUI(list)
+	refreshTaskListUI(list, hideCompleted)
+	refreshTaskListUI(completedList, hideIncomplete)
 
-	list.SetInputCapture(listInputHandler(app, list, addTaskForm, pages))
+	list.SetInputCapture(listInputHandler(app, list, completedList, addTaskForm, pages))
 
 	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
 		panic(fmt.Sprintf("Error running application: %v", err))
@@ -49,7 +55,7 @@ func Run() {
 
 // refreshTaskListUI clears and repopulates the tview.List widget
 // based on the current state of the global 'tasks' slice.
-func refreshTaskListUI(list *tview.List) {
+func refreshTaskListUI(list *tview.List, filter bool) {
 	originalIndex := list.GetCurrentItem()
 	list.Clear()
 
@@ -59,6 +65,10 @@ func refreshTaskListUI(list *tview.List) {
 	}
 
 	for _, task := range taskList {
+		if task.Completed == filter {
+			continue
+		}
+
 		priority := getPriorityString(task.Priority)
 		listItemText := fmt.Sprintf("%s [yellow::i](%s)[white::I]", task.Description, priority)
 		list.AddItem(listItemText, "", 0, nil)
@@ -76,16 +86,17 @@ func refreshTaskListUI(list *tview.List) {
 }
 
 // listInputHandler handles key presses when the taskList has focus.
-func listInputHandler(app *tview.Application, list *tview.List, form *tview.Form, pages *tview.Pages) func(event *tcell.EventKey) *tcell.EventKey {
+func listInputHandler(app *tview.Application, todoList *tview.List, completedList *tview.List, form *tview.Form, pages *tview.Pages) func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyRune:
 			switch event.Rune() {
 			case ' ':
-				index := list.GetCurrentItem()
+				index := todoList.GetCurrentItem()
 				if index >= 0 && index < len(taskList) {
-					taskList = append(taskList[:index], taskList[index+1:]...)
-					refreshTaskListUI(list)
+					taskList[index].Completed = true
+					refreshTaskListUI(todoList, hideCompleted)
+					refreshTaskListUI(completedList, hideIncomplete)
 				}
 				return nil
 
@@ -95,16 +106,16 @@ func listInputHandler(app *tview.Application, list *tview.List, form *tview.Form
 
 			case 'j':
 				// down
-				index := list.GetCurrentItem()
+				index := todoList.GetCurrentItem()
 				if index < len(taskList)-1 {
-					list.SetCurrentItem(index + 1)
+					todoList.SetCurrentItem(index + 1)
 				}
 
 			case 'k':
 				// up
-				index := list.GetCurrentItem()
+				index := todoList.GetCurrentItem()
 				if index > 0 {
-					list.SetCurrentItem(index - 1)
+					todoList.SetCurrentItem(index - 1)
 				}
 
 			case 'q':
@@ -137,10 +148,10 @@ func createAddTaskForm(app *tview.Application, list *tview.List, pages *tview.Pa
 				return
 			}
 
-			newTask := task{Description: taskDesc, Priority: priority}
+			newTask := task{Description: taskDesc, Priority: priority, Completed: false}
 			taskList = append(taskList, newTask)
 
-			refreshTaskListUI(list)
+			refreshTaskListUI(list, hideCompleted)
 
 			hideAddTaskForm(app, list, pages)
 		}).

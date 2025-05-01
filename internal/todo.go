@@ -17,6 +17,7 @@ type database struct {
 type task struct {
 	ID          int    `json:"id"`
 	Parent      int    `json:"parent"`
+	Completed   bool   `json:"completed"`
 	Priority    int    `json:"priority"`
 	Description string `json:"description"`
 	Children    []int  `json:"children"`
