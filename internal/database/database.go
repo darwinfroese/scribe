@@ -2,6 +2,7 @@ package database
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/user"
@@ -14,7 +15,35 @@ const (
 	databaseFileName = "scribe"
 )
 
-func CreateScribeFolderIfNotExists() (string, error) {
+type Database struct {
+	path string
+}
+
+func New() *Database {
+	path, err := createScribeFolderIfNotExists()
+	if err != nil {
+		log.Fatal("an error occured creating the scribe folder: ", err)
+	}
+
+	file, err := getDatabaseFile(path)
+	if err != nil {
+		log.Fatal("an error occured creating the scribe database file: ", err)
+	}
+
+	return &Database{
+		path: fmt.Sprintf("%s/%s", path, file.Name()),
+	}
+}
+
+func (db *Database) Write(content []byte) error {
+	return os.WriteFile(db.path, content, 0644)
+}
+
+func (db *Database) Read() ([]byte, error) {
+	return os.ReadFile(db.path)
+}
+
+func createScribeFolderIfNotExists() (string, error) {
 	usr, _ := user.Current()
 	homeDir := usr.HomeDir
 	path := filepath.Join(homeDir, defaultFolderName)
@@ -36,7 +65,7 @@ func CreateScribeFolderIfNotExists() (string, error) {
 	return path, err
 }
 
-func GetDatabaseFile(path string) (os.FileInfo, error) {
+func getDatabaseFile(path string) (os.FileInfo, error) {
 	dbPath := filepath.Join(path, databaseFileName)
 
 	file, err := os.Stat(dbPath)

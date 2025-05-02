@@ -1,8 +1,12 @@
 package task
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"time"
+
+	"github.com/darwinfroese/scribe/internal/database"
 )
 
 const (
@@ -11,13 +15,6 @@ const (
 	priorityMedium
 	priorityLow
 )
-
-type database struct {
-	// directory is the location of the files
-	directory string `json:"-"`
-
-	Tasks []task `json:"tasks"`
-}
 
 // task is the internal task structure used for managing task details
 // that shouldn't be exposed to consumers of the package. given that
@@ -33,33 +30,62 @@ type task struct {
 	CompletedAt time.Time `json:"completed_at"`
 }
 
-type TaskService struct {
-	nextID int
-
-	tasks []task
+type taskStorage struct {
+	NextID int    `json:"next_id"`
+	Tasks  []task `json:"tasks"`
 }
 
-func NewTaskService() *TaskService {
-	return &TaskService{nextID: 0, tasks: []task{}}
+type TaskService struct {
+	storage *taskStorage
+	db      *database.Database
+}
+
+func NewTaskService(db *database.Database) *TaskService {
+	service := TaskService{
+		db: db,
+	}
+
+	dbContent, err := db.Read()
+	if err != nil {
+		log.Fatal("unable to load the database: ", err)
+	}
+
+	if len(dbContent) == 0 {
+		storage := taskStorage{NextID: 0, Tasks: []task{}}
+		service.storage = &storage
+
+		return &service
+	}
+
+	storage := taskStorage{}
+
+	err = json.Unmarshal(dbContent, &storage)
+	if err != nil {
+		log.Fatal("unable to parse the database contents: ", err)
+	}
+
+	service.storage = &storage
+	return &service
 }
 
 func (service *TaskService) AddTask(description string, priority int) {
 	ttask := task{
-		ID:          service.nextID,
+		ID:          service.storage.NextID,
 		Description: description,
 		Priority:    priority,
 		Completed:   false,
 	}
 
-	service.nextID++
+	service.storage.NextID++
+	service.storage.Tasks = append(service.storage.Tasks, ttask)
 
-	service.tasks = append(service.tasks, ttask)
+	service.write()
 }
 
 func (service *TaskService) GetAllTasks() []int {
 	ids := []int{}
 
-	for _, task := range service.tasks {
+	for _, task := range service.storage.Tasks {
 		ids = append(ids, task.ID)
 	}
 
@@ -67,19 +93,21 @@ func (service *TaskService) GetAllTasks() []int {
 }
 
 func (service *TaskService) CompleteTask(id int) {
-	for idx, task := range service.tasks {
+	for idx, task := range service.storage.Tasks {
 		if task.ID == id {
 			task.Completed = true
 			task.CompletedAt = time.Now()
 
-			service.tasks[idx] = task
+			service.storage.Tasks[idx] = task
+			service.write()
+
 			return
 		}
 	}
 }
 
 func (service *TaskService) Count() int {
-	return len(service.tasks)
+	return len(service.storage.Tasks)
 }
 
 func (service *TaskService) IsCompleted(id int) bool {
@@ -109,13 +137,26 @@ func (service *TaskService) DisplayString(id int) string {
 }
 
 func (service *TaskService) getTask(id int) *task {
-	for _, task := range service.tasks {
+	for _, task := range service.storage.Tasks {
 		if task.ID == id {
 			return &task
 		}
 	}
 
 	return nil
+}
+
+func (service *TaskService) write() {
+	// NOTE: should this hard exit here?
+	content, err := json.Marshal(service.storage)
+	if err != nil {
+		log.Fatal("unable to marshal the database content: ", err)
+	}
+
+	err = service.db.Write(content)
+	if err != nil {
+		log.Fatal("unable to wirte the database content: ", err)
+	}
 }
 
 func getPriorityString(priority int) string {
