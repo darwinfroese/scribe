@@ -24,6 +24,11 @@ type UI struct {
 	pages *tview.Pages
 
 	taskService TaskService
+
+	addTaskFormOpen    bool
+	sessionListFocused bool
+
+	activeTaskList *tview.List
 }
 
 type TaskService interface {
@@ -112,12 +117,13 @@ func (ui *UI) build() {
 	ui.refreshTaskListUI(ui.completedList, hideIncomplete)
 
 	ui.todoList.SetInputCapture(ui.listInputHandler())
+	ui.completedList.SetInputCapture(ui.listInputHandler())
+	ui.sessionList.SetInputCapture(ui.listInputHandler())
 
+	ui.activeTaskList = ui.todoList
 	ui.app.SetRoot(ui.pages, true)
 }
 
-// refreshTaskListUI clears and repopulates the tview.List widget
-// based on the current state of the global 'tasks' slice.
 func (ui *UI) refreshTaskListUI(list *tview.List, filter bool) {
 	originalIndex := list.GetCurrentItem()
 	list.Clear()
@@ -147,7 +153,6 @@ func (ui *UI) refreshTaskListUI(list *tview.List, filter bool) {
 	}
 }
 
-// listInputHandler handles key presses when the taskList has focus.
 func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
@@ -166,24 +171,60 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 				ui.showAddTaskForm()
 				return nil
 
-			case 'j':
-				// down
+			case 'j': // down
 				index := ui.todoList.GetCurrentItem()
 				if index < ui.taskService.Count()-1 {
 					ui.todoList.SetCurrentItem(index + 1)
 				}
+				return nil
 
-			case 'k':
-				// up
+			case 'k': // up
 				index := ui.todoList.GetCurrentItem()
 				if index > 0 {
 					ui.todoList.SetCurrentItem(index - 1)
 				}
+				return nil
 
 			case 'q':
 				ui.app.Stop()
 				return nil
 			}
+
+		case tcell.KeyCtrlJ: // down
+			if ui.addTaskFormOpen || ui.sessionListFocused {
+				return event
+			}
+
+			ui.activeTaskList = ui.completedList
+			ui.app.SetFocus(ui.activeTaskList)
+			return nil
+
+		case tcell.KeyCtrlK: // up
+			if ui.addTaskFormOpen || ui.sessionListFocused {
+				return event
+			}
+
+			ui.activeTaskList = ui.todoList
+			ui.app.SetFocus(ui.activeTaskList)
+			return nil
+
+		case tcell.KeyCtrlL: // right
+			if ui.addTaskFormOpen {
+				return event
+			}
+
+			ui.sessionListFocused = true
+			ui.app.SetFocus(ui.sessionList)
+			return nil
+
+		case tcell.KeyCtrlH: // left
+			if ui.addTaskFormOpen {
+				return event
+			}
+
+			ui.sessionListFocused = false
+			ui.app.SetFocus(ui.activeTaskList)
+			return nil
 
 		case tcell.KeyEnter:
 			return event
@@ -260,9 +301,18 @@ func (ui *UI) showAddTaskForm() {
 
 	ui.pages.ShowPage("form")
 	ui.app.SetFocus(taskInput)
+
+	ui.addTaskFormOpen = true
 }
 
 func (ui *UI) hideAddTaskForm() {
 	ui.pages.HidePage("form")
-	ui.app.SetFocus(ui.todoList)
+
+	if ui.sessionListFocused {
+		ui.app.SetFocus(ui.sessionList)
+	} else {
+		ui.app.SetFocus(ui.activeTaskList)
+	}
+
+	ui.addTaskFormOpen = false
 }
