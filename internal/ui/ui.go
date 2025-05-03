@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -29,13 +30,20 @@ type UI struct {
 	sessionListFocused bool
 
 	activeTaskList *tview.List
+
+	todoTaskIDs      []int
+	completedTaskIDs []int
 }
 
 type TaskService interface {
-	AddTask(description string, priority int)
-	GetAllTasks() []int
-	CompleteTask(id int)
+	AddTask(description string, priority int) int
 	Count() int
+
+	GetAllTasks() []int
+	GetCompletedTasks() []int
+	GetIncompleteTasks() []int
+
+	CompleteTask(id int)
 
 	IsCompleted(id int) bool
 	DisplayString(id int) string
@@ -55,6 +63,9 @@ func New(taskService TaskService) *UI {
 	ui := &UI{
 		taskService: taskService,
 	}
+
+	ui.completedTaskIDs = ui.taskService.GetCompletedTasks()
+	ui.todoTaskIDs = ui.taskService.GetIncompleteTasks()
 
 	ui.build()
 
@@ -113,8 +124,7 @@ func (ui *UI) build() {
 		AddPage("list", flex, true, true).
 		AddPage("form", modal(ui.addTaskForm, 100, 9), true, false)
 
-	ui.refreshTaskListUI(ui.todoList, hideCompleted)
-	ui.refreshTaskListUI(ui.completedList, hideIncomplete)
+	ui.refreshLists()
 
 	ui.todoList.SetInputCapture(ui.listInputHandler())
 	ui.completedList.SetInputCapture(ui.listInputHandler())
@@ -124,11 +134,16 @@ func (ui *UI) build() {
 	ui.app.SetRoot(ui.pages, true)
 }
 
-func (ui *UI) refreshTaskListUI(list *tview.List, filter bool) {
+func (ui *UI) refreshLists() {
+	ui.refreshList(ui.todoList, ui.todoTaskIDs, hideCompleted)
+	ui.refreshList(ui.completedList, ui.completedTaskIDs, hideIncomplete)
+}
+
+func (ui *UI) refreshList(list *tview.List, ids []int, filter bool) {
 	originalIndex := list.GetCurrentItem()
 	list.Clear()
 
-	if ui.taskService.Count() == 0 {
+	if len(ids) == 0 {
 		list.AddItem("No tasks!", "", 0, nil)
 		return
 	}
@@ -160,11 +175,16 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Rune() {
 			case ' ':
 				index := ui.todoList.GetCurrentItem()
-				if index >= 0 && index < ui.taskService.Count() {
-					ui.taskService.CompleteTask(index)
-					ui.refreshTaskListUI(ui.todoList, hideCompleted)
-					ui.refreshTaskListUI(ui.completedList, hideIncomplete)
+				if len(ui.todoTaskIDs) == 0 {
+					return nil
 				}
+
+				ui.taskService.CompleteTask(ui.todoTaskIDs[index])
+
+				ui.completedTaskIDs = append(ui.completedTaskIDs, ui.todoTaskIDs[index])
+				ui.todoTaskIDs = slices.Delete(ui.todoTaskIDs, index, index+1)
+
+				ui.refreshLists()
 				return nil
 
 			case 'a':
@@ -263,8 +283,8 @@ func (ui *UI) createAddTaskForm() *tview.Form {
 			return
 		}
 
-		ui.taskService.AddTask(taskDesc, priority)
-		ui.refreshTaskListUI(ui.todoList, hideCompleted)
+		ui.todoTaskIDs = append(ui.todoTaskIDs, ui.taskService.AddTask(taskDesc, priority))
+		ui.refreshLists()
 
 		ui.hideAddTaskForm()
 	}).

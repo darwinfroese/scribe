@@ -68,7 +68,7 @@ func NewTaskService(db *database.Database) *TaskService {
 	return &service
 }
 
-func (service *TaskService) AddTask(description string, priority int) {
+func (service *TaskService) AddTask(description string, priority int) int {
 	ttask := task{
 		ID:          service.storage.NextID,
 		Description: description,
@@ -80,6 +80,8 @@ func (service *TaskService) AddTask(description string, priority int) {
 	service.storage.Tasks = append(service.storage.Tasks, ttask)
 
 	service.write()
+
+	return ttask.ID
 }
 
 func (service *TaskService) GetAllTasks() []int {
@@ -87,6 +89,30 @@ func (service *TaskService) GetAllTasks() []int {
 
 	for _, task := range service.storage.Tasks {
 		ids = append(ids, task.ID)
+	}
+
+	return ids
+}
+
+func (service *TaskService) GetCompletedTasks() []int {
+	ids := []int{}
+
+	for _, task := range service.storage.Tasks {
+		if task.Completed {
+			ids = append(ids, task.ID)
+		}
+	}
+
+	return ids
+}
+
+func (service *TaskService) GetIncompleteTasks() []int {
+	ids := []int{}
+
+	for _, task := range service.storage.Tasks {
+		if !task.Completed {
+			ids = append(ids, task.ID)
+		}
 	}
 
 	return ids
