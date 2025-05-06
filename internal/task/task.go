@@ -132,6 +132,19 @@ func (service *TaskService) CompleteTask(id int) {
 	}
 }
 
+func (service *TaskService) UnCompleteTask(id int) {
+	for idx, task := range service.storage.Tasks {
+		if task.ID == id {
+			task.Completed = false
+
+			service.storage.Tasks[idx] = task
+			service.write()
+
+			return
+		}
+	}
+}
+
 func (service *TaskService) Count() int {
 	return len(service.storage.Tasks)
 }
