@@ -19,10 +19,15 @@ type Database struct {
 	path string
 }
 
-func New() *Database {
-	path, err := createScribeFolderIfNotExists()
-	if err != nil {
-		log.Fatal("an error occured creating the scribe folder: ", err)
+func New(global bool) *Database {
+	path := "."
+	var err error
+
+	if global {
+		path, err = createScribeFolderIfNotExists()
+		if err != nil {
+			log.Fatal("an error occured creating the scribe folder: ", err)
+		}
 	}
 
 	file, err := getDatabaseFile(path)
