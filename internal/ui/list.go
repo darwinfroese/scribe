@@ -27,7 +27,7 @@ func (ui *UI) refreshList(list *list, ids []int, filter bool) {
 		return
 	}
 
-	for _, id := range ui.taskService.GetAllTasks() {
+	for _, id := range ui.taskService.GetAllTaskIDs() {
 		if ui.taskService.IsCompleted(id) == filter {
 			continue
 		}
@@ -62,8 +62,27 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 
 		ui.refreshLists()
 		return nil
+	case 'e':
+		index := ui.activeTaskList.GetCurrentItem()
+		if len(ui.todoTaskIDs) == 0 {
+			return nil
+		}
+
+		task, priority := ui.taskService.GetTaskDetails(ui.todoTaskIDs[index])
+		ui.showEditTaskForm(task, priority)
+	case 'x':
+		index := ui.completedList.GetCurrentItem()
+		if len(ui.completedTaskIDs) == 0 {
+			return nil
+		}
+
+		ui.taskService.DeleteTask(ui.completedTaskIDs[index])
+		ui.completedTaskIDs = slices.Delete(ui.completedTaskIDs, index, index+1)
+		ui.refreshLists()
+
+		return nil
 	case 'a':
-		ui.showAddTaskForm()
+		ui.showNewTaskForm()
 		return nil
 
 	case 'j': // down
@@ -104,8 +123,19 @@ func (ui *UI) completeInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		ui.refreshLists()
 
 		return nil
+	case 'x':
+		index := ui.completedList.GetCurrentItem()
+		if len(ui.completedTaskIDs) == 0 {
+			return nil
+		}
+
+		ui.taskService.DeleteTask(ui.completedTaskIDs[index])
+		ui.completedTaskIDs = slices.Delete(ui.completedTaskIDs, index, index+1)
+		ui.refreshLists()
+
+		return nil
 	case 'a':
-		ui.showAddTaskForm()
+		ui.showNewTaskForm()
 		return nil
 
 	case 'j': // down

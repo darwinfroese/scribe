@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"github.com/darwinfroese/scribe/internal/database"
@@ -33,6 +34,8 @@ type task struct {
 type taskStorage struct {
 	NextID int    `json:"next_id"`
 	Tasks  []task `json:"tasks"`
+
+	DeletedTasks []task `json:"deleted_tasks"`
 }
 
 type TaskService struct {
@@ -84,7 +87,7 @@ func (service *TaskService) AddTask(description string, priority int) int {
 	return ttask.ID
 }
 
-func (service *TaskService) GetAllTasks() []int {
+func (service *TaskService) GetAllTaskIDs() []int {
 	ids := []int{}
 
 	for _, task := range service.storage.Tasks {
@@ -94,7 +97,7 @@ func (service *TaskService) GetAllTasks() []int {
 	return ids
 }
 
-func (service *TaskService) GetCompletedTasks() []int {
+func (service *TaskService) GetCompletedTaskIDs() []int {
 	ids := []int{}
 
 	for _, task := range service.storage.Tasks {
@@ -106,7 +109,7 @@ func (service *TaskService) GetCompletedTasks() []int {
 	return ids
 }
 
-func (service *TaskService) GetIncompleteTasks() []int {
+func (service *TaskService) GetIncompleteTaskIDs() []int {
 	ids := []int{}
 
 	for _, task := range service.storage.Tasks {
@@ -145,6 +148,30 @@ func (service *TaskService) UnCompleteTask(id int) {
 	}
 }
 
+func (service *TaskService) DeleteTask(id int) {
+	idxToDelete := 0
+	taskFound := false
+
+	for idx, task := range service.storage.Tasks {
+		if task.ID == id {
+			idxToDelete = idx
+			taskFound = true
+
+			break
+		}
+	}
+
+	if !taskFound {
+		return
+	}
+
+	task := service.storage.Tasks[idxToDelete]
+	service.storage.Tasks = slices.Delete(service.storage.Tasks, idxToDelete, idxToDelete+1)
+	service.storage.DeletedTasks = append(service.storage.DeletedTasks, task)
+
+	service.write()
+}
+
 func (service *TaskService) Count() int {
 	return len(service.storage.Tasks)
 }
@@ -173,6 +200,24 @@ func (service *TaskService) DisplayString(id int) string {
 	}
 
 	return display
+}
+
+func (service *TaskService) GetTaskDetails(id int) (string, int) {
+	task := service.getTask(id)
+
+	return task.Description, task.Priority
+}
+
+func (service *TaskService) EditTask(id int, description string, priority int) {
+	for idx, task := range service.storage.Tasks {
+		if task.ID == id {
+			task.Description = description
+			task.Priority = priority
+
+			service.storage.Tasks[idx] = task
+			return
+		}
+	}
 }
 
 func (service *TaskService) getTask(id int) *task {

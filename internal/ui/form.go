@@ -1,11 +1,15 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-func (ui *UI) createAddTaskForm() *tview.Form {
+type formActionHandler func(form *tview.Form) func()
+
+func (ui *UI) createForm(action string, name string, actionHandler formActionHandler) *tview.Form {
 	form := tview.NewForm()
 
 	taskInput := tview.NewInputField().SetLabel("Task:").SetFieldWidth(80)
@@ -22,8 +26,67 @@ func (ui *UI) createAddTaskForm() *tview.Form {
 	dropDown.SetPrefixStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
 
 	form.AddFormItem(dropDown)
+	form.AddButton(action, actionHandler(form)).
+		AddButton("Cancel", func() {
+			ui.hideTaskForm(name)
+		})
 
-	form.AddButton("Add", func() {
+	form.SetBorder(true).SetTitle(fmt.Sprintf("%s Task", action))
+
+	form.SetFieldStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorLightGray))
+	form.SetButtonStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tview.Styles.PrimitiveBackgroundColor))
+	form.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorSlateGray))
+
+	form.SetInputCapture(ui.formInputHandler)
+
+	return form
+}
+
+func (ui *UI) formInputHandler(event *tcell.EventKey) *tcell.EventKey {
+	if event.Key() == tcell.KeyEsc {
+		ui.hideTaskForm(ui.activeForm)
+		return nil
+	}
+
+	return event
+}
+
+func (ui *UI) showNewTaskForm() {
+	ui.showTaskForm("", 0, addTaskFormName)
+}
+
+func (ui *UI) showEditTaskForm(task string, priority int) {
+	ui.showTaskForm(task, priority, editTaskFormName)
+}
+
+func (ui *UI) showTaskForm(task string, priority int, form string) {
+	taskInput := ui.addTaskForm.GetFormItemByLabel("Task:").(*tview.InputField)
+	priorityDropDown := ui.addTaskForm.GetFormItemByLabel("Priority:").(*tview.DropDown)
+
+	taskInput.SetText(task)
+	priorityDropDown.SetCurrentOption(priority)
+
+	ui.pages.ShowPage(form)
+	ui.activeForm = form
+	ui.app.SetFocus(taskInput)
+
+	ui.taskFormOpen = true
+}
+
+func (ui *UI) hideTaskForm(form string) {
+	ui.pages.HidePage(form)
+
+	if ui.sessionListFocused {
+		ui.app.SetFocus(ui.sessionList)
+	} else {
+		ui.app.SetFocus(ui.activeTaskList)
+	}
+
+	ui.taskFormOpen = false
+}
+
+func (ui *UI) addTaskActionHandler(form *tview.Form) func() {
+	return func() {
 		taskDescInput := form.GetFormItemByLabel("Task:").(*tview.InputField)
 		priorityDropDown := form.GetFormItemByLabel("Priority:").(*tview.DropDown)
 
@@ -37,53 +100,27 @@ func (ui *UI) createAddTaskForm() *tview.Form {
 		ui.todoTaskIDs = append(ui.todoTaskIDs, ui.taskService.AddTask(taskDesc, priority))
 		ui.refreshLists()
 
-		ui.hideAddTaskForm()
-	}).
-		AddButton("Cancel", func() {
-			ui.hideAddTaskForm()
-		})
-
-	form.SetBorder(true).SetTitle("Add New Task")
-
-	form.SetFieldStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorLightGray))
-	form.SetButtonStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tview.Styles.PrimitiveBackgroundColor))
-	form.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorSlateGray))
-
-	form.SetInputCapture(ui.formInputHandler)
-
-	return form
-}
-
-func (ui *UI) formInputHandler(event *tcell.EventKey) *tcell.EventKey {
-	if event.Key() == tcell.KeyEsc {
-		ui.hideAddTaskForm()
-		return nil
+		ui.hideTaskForm(addTaskFormName)
 	}
-
-	return event
 }
 
-func (ui *UI) showAddTaskForm() {
-	taskInput := ui.addTaskForm.GetFormItemByLabel("Task:").(*tview.InputField)
-	priorityDropDown := ui.addTaskForm.GetFormItemByLabel("Priority:").(*tview.DropDown)
+func (ui *UI) editTaskActionHandler(form *tview.Form) func() {
+	return func() {
+		taskDescInput := form.GetFormItemByLabel("Task:").(*tview.InputField)
+		priorityDropDown := form.GetFormItemByLabel("Priority:").(*tview.DropDown)
 
-	taskInput.SetText("")
-	priorityDropDown.SetCurrentOption(0)
+		taskDesc := taskDescInput.GetText()
+		priority, _ := priorityDropDown.GetCurrentOption()
 
-	ui.pages.ShowPage("form")
-	ui.app.SetFocus(taskInput)
+		if taskDesc == "" {
+			return
+		}
 
-	ui.addTaskFormOpen = true
-}
+		idx := ui.todoList.GetCurrentItem()
 
-func (ui *UI) hideAddTaskForm() {
-	ui.pages.HidePage("form")
+		ui.taskService.EditTask(ui.todoTaskIDs[idx], taskDesc, priority)
+		ui.refreshLists()
 
-	if ui.sessionListFocused {
-		ui.app.SetFocus(ui.sessionList)
-	} else {
-		ui.app.SetFocus(ui.activeTaskList)
+		ui.hideTaskForm(editTaskFormName)
 	}
-
-	ui.addTaskFormOpen = false
 }

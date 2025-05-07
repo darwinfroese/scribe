@@ -10,6 +10,9 @@ import (
 const (
 	hideCompleted  = true
 	hideIncomplete = false
+
+	addTaskFormName  = "add-form"
+	editTaskFormName = "edit-form"
 )
 
 type UI struct {
@@ -19,13 +22,15 @@ type UI struct {
 	completedList *list
 	sessionList   *list
 
-	addTaskForm *tview.Form
+	addTaskForm  *tview.Form
+	editTaskForm *tview.Form
+	activeForm   string
 
 	pages *tview.Pages
 
 	taskService TaskService
 
-	addTaskFormOpen    bool
+	taskFormOpen       bool
 	sessionListFocused bool
 
 	activeTaskList *list
@@ -38,12 +43,15 @@ type TaskService interface {
 	AddTask(description string, priority int) int
 	Count() int
 
-	GetAllTasks() []int
-	GetCompletedTasks() []int
-	GetIncompleteTasks() []int
+	GetAllTaskIDs() []int
+	GetCompletedTaskIDs() []int
+	GetIncompleteTaskIDs() []int
+	GetTaskDetails(id int) (string, int)
 
 	CompleteTask(id int)
 	UnCompleteTask(id int)
+	DeleteTask(id int)
+	EditTask(id int, description string, priority int)
 
 	IsCompleted(id int) bool
 	DisplayString(id int) string
@@ -64,8 +72,8 @@ func New(taskService TaskService) *UI {
 		taskService: taskService,
 	}
 
-	ui.completedTaskIDs = ui.taskService.GetCompletedTasks()
-	ui.todoTaskIDs = ui.taskService.GetIncompleteTasks()
+	ui.completedTaskIDs = ui.taskService.GetCompletedTaskIDs()
+	ui.todoTaskIDs = ui.taskService.GetIncompleteTaskIDs()
 
 	ui.build()
 
@@ -102,7 +110,8 @@ func (ui *UI) build() {
 	ui.completedList.SetBorder(true).SetTitle(" Completed Tasks ")
 
 	ui.pages = tview.NewPages()
-	ui.addTaskForm = ui.createAddTaskForm()
+	ui.addTaskForm = ui.createForm("Add New", addTaskFormName, ui.addTaskActionHandler)
+	ui.editTaskForm = ui.createForm("Edit", editTaskFormName, ui.editTaskActionHandler)
 
 	modal := func(p tview.Primitive, width, height int) tview.Primitive {
 		return tview.NewGrid().
@@ -130,7 +139,8 @@ func (ui *UI) build() {
 
 	ui.pages.
 		AddPage("list", flex, true, true).
-		AddPage("form", modal(ui.addTaskForm, 100, 9), true, false)
+		AddPage(addTaskFormName, modal(ui.addTaskForm, 100, 9), true, false).
+		AddPage(editTaskFormName, modal(ui.editTaskForm, 100, 9), true, false)
 
 	ui.refreshLists()
 

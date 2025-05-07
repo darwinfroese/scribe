@@ -10,7 +10,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 		case tcell.KeyRune:
 			ui.activeTaskList.handleInput(event)
 		case tcell.KeyCtrlJ: // down
-			if ui.addTaskFormOpen || ui.sessionListFocused {
+			if ui.taskFormOpen || ui.sessionListFocused {
 				return event
 			}
 
@@ -19,7 +19,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 			return nil
 
 		case tcell.KeyCtrlK: // up
-			if ui.addTaskFormOpen || ui.sessionListFocused {
+			if ui.taskFormOpen || ui.sessionListFocused {
 				return event
 			}
 
@@ -28,7 +28,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 			return nil
 
 		case tcell.KeyCtrlL: // right
-			if ui.addTaskFormOpen {
+			if ui.taskFormOpen {
 				return event
 			}
 
@@ -37,7 +37,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 			return nil
 
 		case tcell.KeyCtrlH: // left
-			if ui.addTaskFormOpen {
+			if ui.taskFormOpen {
 				return event
 			}
 
