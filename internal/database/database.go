@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	defaultFolderName = ".scribe"
+	globalFolderName = ".scribe"
 
-	databaseFileName = "scribe"
+	globalDatabaseFileName = "scribe"
+	localDatabaseFileName  = ".scribe"
 )
 
 type Database struct {
@@ -20,17 +21,20 @@ type Database struct {
 }
 
 func New(global bool) *Database {
-	path := "."
 	var err error
+	path := "."
+	fileName := localDatabaseFileName
 
 	if global {
 		path, err = createScribeFolderIfNotExists()
 		if err != nil {
 			log.Fatal("an error occured creating the scribe folder: ", err)
 		}
+
+		fileName = globalDatabaseFileName
 	}
 
-	file, err := getDatabaseFile(path)
+	file, err := getDatabaseFile(path, fileName)
 	if err != nil {
 		log.Fatal("an error occured creating the scribe database file: ", err)
 	}
@@ -51,7 +55,7 @@ func (db *Database) Read() ([]byte, error) {
 func createScribeFolderIfNotExists() (string, error) {
 	usr, _ := user.Current()
 	homeDir := usr.HomeDir
-	path := filepath.Join(homeDir, defaultFolderName)
+	path := filepath.Join(homeDir, globalFolderName)
 
 	_, err := os.Stat(path)
 	if !errors.Is(err, os.ErrNotExist) && err != nil {
@@ -70,8 +74,8 @@ func createScribeFolderIfNotExists() (string, error) {
 	return path, err
 }
 
-func getDatabaseFile(path string) (os.FileInfo, error) {
-	dbPath := filepath.Join(path, databaseFileName)
+func getDatabaseFile(path, fileName string) (os.FileInfo, error) {
+	dbPath := filepath.Join(path, fileName)
 
 	file, err := os.Stat(dbPath)
 	if errors.Is(err, os.ErrNotExist) {
