@@ -215,9 +215,11 @@ func (service *TaskService) EditTask(id int, description string, priority int) {
 			task.Priority = priority
 
 			service.storage.Tasks[idx] = task
-			return
+			break
 		}
 	}
+
+	service.write()
 }
 
 func (service *TaskService) getTask(id int) *task {

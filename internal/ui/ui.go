@@ -22,9 +22,9 @@ type UI struct {
 	completedList *list
 	sessionList   *list
 
-	addTaskForm  *tview.Form
-	editTaskForm *tview.Form
-	activeForm   string
+	addTaskForm  *form
+	editTaskForm *form
+	activeForm   *form
 
 	pages *tview.Pages
 
