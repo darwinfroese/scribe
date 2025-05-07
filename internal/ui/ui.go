@@ -37,6 +37,7 @@ type UI struct {
 
 	todoTaskIDs      []int
 	completedTaskIDs []int
+	sessionIDs       []int
 }
 
 type TaskService interface {
@@ -53,8 +54,12 @@ type TaskService interface {
 	DeleteTask(id int)
 	EditTask(id int, description string, priority int)
 
+	TogglePlanTask(id int)
+
 	IsCompleted(id int) bool
 	DisplayString(id int) string
+
+	GetSessionIDs() []int
 }
 
 func New(taskService TaskService) *UI {
@@ -74,6 +79,7 @@ func New(taskService TaskService) *UI {
 
 	ui.completedTaskIDs = ui.taskService.GetCompletedTaskIDs()
 	ui.todoTaskIDs = ui.taskService.GetIncompleteTaskIDs()
+	ui.sessionIDs = ui.taskService.GetSessionIDs()
 
 	ui.build()
 

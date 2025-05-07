@@ -14,7 +14,7 @@ func main() {
 	flag.Parse()
 
 	db := database.New(global)
-	taskService := task.NewTaskService(db)
+	taskService := task.NewService(db)
 
 	app := ui.New(taskService)
 	app.Run()

@@ -23,12 +23,14 @@ const (
 // the fields need to be exposed.
 type task struct {
 	ID          int       `json:"id"`
-	Parent      int       `json:"parent"`
 	Completed   bool      `json:"completed"`
+	Planned     bool      `json:"planned"`
 	Priority    int       `json:"priority"`
 	Description string    `json:"description"`
-	Children    []int     `json:"children"`
 	CompletedAt time.Time `json:"completed_at"`
+
+	Parent   int   `json:"parent"`
+	Children []int `json:"children"`
 }
 
 type taskStorage struct {
@@ -38,13 +40,19 @@ type taskStorage struct {
 	DeletedTasks []task `json:"deleted_tasks"`
 }
 
-type TaskService struct {
-	storage *taskStorage
-	db      *database.Database
+type storage struct {
+	Tasks    *taskStorage    `json:"tasks"`
+	Sessions *sessionStorage `json:"sessions"`
 }
 
-func NewTaskService(db *database.Database) *TaskService {
-	service := TaskService{
+type Service struct {
+	db *database.Database
+
+	storage *storage
+}
+
+func NewService(db *database.Database) *Service {
+	service := Service{
 		db: db,
 	}
 
@@ -54,13 +62,15 @@ func NewTaskService(db *database.Database) *TaskService {
 	}
 
 	if len(dbContent) == 0 {
-		storage := taskStorage{NextID: 0, Tasks: []task{}}
-		service.storage = &storage
+		storage := &storage{}
+		storage.Tasks = &taskStorage{NextID: 0, Tasks: []task{}}
+		storage.Sessions = &sessionStorage{NextID: 0, Sessions: []session{}}
 
+		service.storage = storage
 		return &service
 	}
 
-	storage := taskStorage{}
+	storage := storage{}
 
 	err = json.Unmarshal(dbContent, &storage)
 	if err != nil {
@@ -68,39 +78,41 @@ func NewTaskService(db *database.Database) *TaskService {
 	}
 
 	service.storage = &storage
+
 	return &service
 }
 
-func (service *TaskService) AddTask(description string, priority int) int {
+func (service *Service) AddTask(description string, priority int) int {
 	ttask := task{
-		ID:          service.storage.NextID,
+		ID:          service.storage.Tasks.NextID,
 		Description: description,
 		Priority:    priority,
 		Completed:   false,
+		Planned:     false,
 	}
 
-	service.storage.NextID++
-	service.storage.Tasks = append(service.storage.Tasks, ttask)
+	service.storage.Tasks.NextID++
+	service.storage.Tasks.Tasks = append(service.storage.Tasks.Tasks, ttask)
 
 	service.write()
 
 	return ttask.ID
 }
 
-func (service *TaskService) GetAllTaskIDs() []int {
+func (service *Service) GetAllTaskIDs() []int {
 	ids := []int{}
 
-	for _, task := range service.storage.Tasks {
+	for _, task := range service.storage.Tasks.Tasks {
 		ids = append(ids, task.ID)
 	}
 
 	return ids
 }
 
-func (service *TaskService) GetCompletedTaskIDs() []int {
+func (service *Service) GetCompletedTaskIDs() []int {
 	ids := []int{}
 
-	for _, task := range service.storage.Tasks {
+	for _, task := range service.storage.Tasks.Tasks {
 		if task.Completed {
 			ids = append(ids, task.ID)
 		}
@@ -109,10 +121,10 @@ func (service *TaskService) GetCompletedTaskIDs() []int {
 	return ids
 }
 
-func (service *TaskService) GetIncompleteTaskIDs() []int {
+func (service *Service) GetIncompleteTaskIDs() []int {
 	ids := []int{}
 
-	for _, task := range service.storage.Tasks {
+	for _, task := range service.storage.Tasks.Tasks {
 		if !task.Completed {
 			ids = append(ids, task.ID)
 		}
@@ -121,13 +133,18 @@ func (service *TaskService) GetIncompleteTaskIDs() []int {
 	return ids
 }
 
-func (service *TaskService) CompleteTask(id int) {
-	for idx, task := range service.storage.Tasks {
+func (service *Service) CompleteTask(id int) {
+	for idx, task := range service.storage.Tasks.Tasks {
 		if task.ID == id {
 			task.Completed = true
 			task.CompletedAt = time.Now()
 
-			service.storage.Tasks[idx] = task
+			if !task.Planned {
+				service.planTask(task.ID)
+				task.Planned = true
+			}
+			service.storage.Tasks.Tasks[idx] = task
+
 			service.write()
 
 			return
@@ -135,12 +152,12 @@ func (service *TaskService) CompleteTask(id int) {
 	}
 }
 
-func (service *TaskService) UnCompleteTask(id int) {
-	for idx, task := range service.storage.Tasks {
+func (service *Service) UnCompleteTask(id int) {
+	for idx, task := range service.storage.Tasks.Tasks {
 		if task.ID == id {
 			task.Completed = false
 
-			service.storage.Tasks[idx] = task
+			service.storage.Tasks.Tasks[idx] = task
 			service.write()
 
 			return
@@ -148,11 +165,11 @@ func (service *TaskService) UnCompleteTask(id int) {
 	}
 }
 
-func (service *TaskService) DeleteTask(id int) {
+func (service *Service) DeleteTask(id int) {
 	idxToDelete := 0
 	taskFound := false
 
-	for idx, task := range service.storage.Tasks {
+	for idx, task := range service.storage.Tasks.Tasks {
 		if task.ID == id {
 			idxToDelete = idx
 			taskFound = true
@@ -165,18 +182,18 @@ func (service *TaskService) DeleteTask(id int) {
 		return
 	}
 
-	task := service.storage.Tasks[idxToDelete]
-	service.storage.Tasks = slices.Delete(service.storage.Tasks, idxToDelete, idxToDelete+1)
-	service.storage.DeletedTasks = append(service.storage.DeletedTasks, task)
+	task := service.storage.Tasks.Tasks[idxToDelete]
+	service.storage.Tasks.Tasks = slices.Delete(service.storage.Tasks.Tasks, idxToDelete, idxToDelete+1)
+	service.storage.Tasks.DeletedTasks = append(service.storage.Tasks.DeletedTasks, task)
 
 	service.write()
 }
 
-func (service *TaskService) Count() int {
-	return len(service.storage.Tasks)
+func (service *Service) Count() int {
+	return len(service.storage.Tasks.Tasks)
 }
 
-func (service *TaskService) IsCompleted(id int) bool {
+func (service *Service) IsCompleted(id int) bool {
 	task := service.getTask(id)
 
 	if task == nil {
@@ -186,7 +203,7 @@ func (service *TaskService) IsCompleted(id int) bool {
 	return task.Completed
 }
 
-func (service *TaskService) DisplayString(id int) string {
+func (service *Service) DisplayString(id int) string {
 	task := service.getTask(id)
 
 	if task == nil {
@@ -199,22 +216,27 @@ func (service *TaskService) DisplayString(id int) string {
 		display = fmt.Sprintf("%s [gray::i]%s[white::I]", display, task.CompletedAt.Format(time.DateOnly))
 	}
 
+	// TODO: only show this for today's plan
+	if task.Planned {
+		display = fmt.Sprintf("* %s", display)
+	}
+
 	return display
 }
 
-func (service *TaskService) GetTaskDetails(id int) (string, int) {
+func (service *Service) GetTaskDetails(id int) (string, int) {
 	task := service.getTask(id)
 
 	return task.Description, task.Priority
 }
 
-func (service *TaskService) EditTask(id int, description string, priority int) {
-	for idx, task := range service.storage.Tasks {
+func (service *Service) EditTask(id int, description string, priority int) {
+	for idx, task := range service.storage.Tasks.Tasks {
 		if task.ID == id {
 			task.Description = description
 			task.Priority = priority
 
-			service.storage.Tasks[idx] = task
+			service.storage.Tasks.Tasks[idx] = task
 			break
 		}
 	}
@@ -222,8 +244,8 @@ func (service *TaskService) EditTask(id int, description string, priority int) {
 	service.write()
 }
 
-func (service *TaskService) getTask(id int) *task {
-	for _, task := range service.storage.Tasks {
+func (service *Service) getTask(id int) *task {
+	for _, task := range service.storage.Tasks.Tasks {
 		if task.ID == id {
 			return &task
 		}
@@ -232,7 +254,16 @@ func (service *TaskService) getTask(id int) *task {
 	return nil
 }
 
-func (service *TaskService) write() {
+func (service *Service) saveTask(task *task) {
+	for idx, tt := range service.storage.Tasks.Tasks {
+		if tt.ID == task.ID {
+			service.storage.Tasks.Tasks[idx] = *task
+			return
+		}
+	}
+}
+
+func (service *Service) write() {
 	// NOTE: should this hard exit here?
 	content, err := json.Marshal(service.storage)
 	if err != nil {

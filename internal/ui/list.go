@@ -50,7 +50,7 @@ func (ui *UI) refreshList(list *list, ids []int, filter bool) {
 func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Rune() {
 	case ' ':
-		index := ui.activeTaskList.GetCurrentItem()
+		index := ui.todoList.GetCurrentItem()
 		if len(ui.todoTaskIDs) == 0 {
 			return nil
 		}
@@ -63,21 +63,30 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		ui.refreshLists()
 		return nil
 	case 'e':
-		index := ui.activeTaskList.GetCurrentItem()
+		index := ui.todoList.GetCurrentItem()
 		if len(ui.todoTaskIDs) == 0 {
 			return nil
 		}
 
 		task, priority := ui.taskService.GetTaskDetails(ui.todoTaskIDs[index])
 		ui.showEditTaskForm(task, priority)
-	case 'x':
-		index := ui.completedList.GetCurrentItem()
-		if len(ui.completedTaskIDs) == 0 {
+	case 'p':
+		index := ui.todoList.GetCurrentItem()
+		if len(ui.todoTaskIDs) == 0 {
 			return nil
 		}
 
-		ui.taskService.DeleteTask(ui.completedTaskIDs[index])
-		ui.completedTaskIDs = slices.Delete(ui.completedTaskIDs, index, index+1)
+		ui.taskService.TogglePlanTask(ui.todoTaskIDs[index])
+		ui.refreshLists()
+		return nil
+	case 'x':
+		index := ui.todoList.GetCurrentItem()
+		if len(ui.todoTaskIDs) == 0 {
+			return nil
+		}
+
+		ui.taskService.DeleteTask(ui.todoTaskIDs[index])
+		ui.todoTaskIDs = slices.Delete(ui.todoTaskIDs, index, index+1)
 		ui.refreshLists()
 
 		return nil
