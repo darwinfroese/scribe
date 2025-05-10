@@ -59,7 +59,8 @@ type TaskService interface {
 	IsCompleted(id int) bool
 	DisplayString(id int) string
 
-	GetSessionIDs() []int
+	GetAllSessionIDs() []int
+	SessionDisplayString(id int) string
 }
 
 func New(taskService TaskService) *UI {
@@ -79,7 +80,7 @@ func New(taskService TaskService) *UI {
 
 	ui.completedTaskIDs = ui.taskService.GetCompletedTaskIDs()
 	ui.todoTaskIDs = ui.taskService.GetIncompleteTaskIDs()
-	ui.sessionIDs = ui.taskService.GetSessionIDs()
+	ui.sessionIDs = ui.taskService.GetAllSessionIDs()
 
 	ui.build()
 

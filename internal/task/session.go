@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"slices"
 	"time"
 )
@@ -16,7 +17,7 @@ type sessionStorage struct {
 	Sessions []session `json:"sessions"`
 }
 
-func (service *Service) GetSessionIDs() []int {
+func (service *Service) GetAllSessionIDs() []int {
 	ids := []int{}
 
 	for _, session := range service.storage.Sessions.Sessions {
@@ -39,15 +40,25 @@ func (service *Service) TogglePlanTask(taskID int) {
 	}
 }
 
+func (service *Service) SessionDisplayString(id int) string {
+	session := service.getSession(id)
+
+	if session.isToday() && len(session.PlannedTasks) > 0 {
+		return fmt.Sprintf("* %s", session.Date)
+	}
+
+	return session.Date
+}
+
 func (service *Service) planTask(taskID int) {
-	session := service.getOrCreateSession()
+	session := service.getOrCreateTodaysSession()
 
 	session.PlannedTasks = append(session.PlannedTasks, taskID)
 	service.saveSession(session)
 }
 
 func (service *Service) unplanTask(taskID int) {
-	session := service.getOrCreateSession()
+	session := service.getOrCreateTodaysSession()
 
 	for idx, task := range session.PlannedTasks {
 		if task == taskID {
@@ -58,21 +69,31 @@ func (service *Service) unplanTask(taskID int) {
 	}
 }
 
-func (service *Service) saveSession(newSession session) {
+func (service *Service) saveSession(newSession *session) {
 	for idx, session := range service.storage.Sessions.Sessions {
 		if session.ID == newSession.ID {
-			service.storage.Sessions.Sessions[idx] = newSession
+			service.storage.Sessions.Sessions[idx] = *newSession
 			return
 		}
 	}
 }
 
-func (service *Service) getOrCreateSession() session {
+func (service *Service) getSession(id int) *session {
+	for _, session := range service.storage.Sessions.Sessions {
+		if session.ID == id {
+			return &session
+		}
+	}
+
+	return nil
+}
+
+func (service *Service) getOrCreateTodaysSession() *session {
 	today := time.Now().Format(time.DateOnly)
 
 	for _, session := range service.storage.Sessions.Sessions {
 		if session.Date == today {
-			return session
+			return &session
 		}
 	}
 
@@ -84,5 +105,23 @@ func (service *Service) getOrCreateSession() session {
 	service.storage.Sessions.NextID++
 	service.storage.Sessions.Sessions = append(service.storage.Sessions.Sessions, session)
 
-	return session
+	return &session
+}
+
+func (service *Service) taskPlannedToday(id int) bool {
+	session := service.getOrCreateTodaysSession()
+
+	if len(session.PlannedTasks) == 0 {
+		return false
+	}
+
+	if slices.Contains(session.PlannedTasks, id) {
+		return true
+	}
+
+	return false
+}
+
+func (session *session) isToday() bool {
+	return session.Date == time.Now().Format(time.DateOnly)
 }

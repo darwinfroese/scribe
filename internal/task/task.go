@@ -186,6 +186,8 @@ func (service *Service) DeleteTask(id int) {
 	service.storage.Tasks.Tasks = slices.Delete(service.storage.Tasks.Tasks, idxToDelete, idxToDelete+1)
 	service.storage.Tasks.DeletedTasks = append(service.storage.Tasks.DeletedTasks, task)
 
+	service.unplanTask(task.ID)
+
 	service.write()
 }
 
@@ -216,8 +218,7 @@ func (service *Service) DisplayString(id int) string {
 		display = fmt.Sprintf("%s [gray::i]%s[white::I]", display, task.CompletedAt.Format(time.DateOnly))
 	}
 
-	// TODO: only show this for today's plan
-	if task.Planned {
+	if task.Planned && service.taskPlannedToday(task.ID) {
 		display = fmt.Sprintf("* %s", display)
 	}
 

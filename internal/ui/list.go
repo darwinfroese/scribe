@@ -14,11 +14,13 @@ type list struct {
 }
 
 func (ui *UI) refreshLists() {
-	ui.refreshList(ui.todoList, ui.todoTaskIDs, hideCompleted)
-	ui.refreshList(ui.completedList, ui.completedTaskIDs, hideIncomplete)
+	ui.refreshTaskList(ui.todoList, ui.todoTaskIDs, hideCompleted)
+	ui.refreshTaskList(ui.completedList, ui.completedTaskIDs, hideIncomplete)
+
+	ui.refreshSessionList(ui.sessionList, ui.sessionIDs)
 }
 
-func (ui *UI) refreshList(list *list, ids []int, filter bool) {
+func (ui *UI) refreshTaskList(list *list, ids []int, filter bool) {
 	originalIndex := list.GetCurrentItem()
 	list.Clear()
 
@@ -33,6 +35,31 @@ func (ui *UI) refreshList(list *list, ids []int, filter bool) {
 		}
 
 		listItemText := ui.taskService.DisplayString(id)
+		list.AddItem(listItemText, "", 0, nil)
+	}
+
+	if list.GetItemCount() > 0 {
+		if originalIndex >= list.GetItemCount() {
+			list.SetCurrentItem(list.GetItemCount() - 1)
+		} else if originalIndex < 0 && list.GetItemCount() > 0 {
+			list.SetCurrentItem(0)
+		} else {
+			list.SetCurrentItem(originalIndex)
+		}
+	}
+}
+
+func (ui *UI) refreshSessionList(list *list, ids []int) {
+	originalIndex := list.GetCurrentItem()
+	list.Clear()
+
+	if len(ids) == 0 {
+		list.AddItem("No Sessions!", "", 0, nil)
+		return
+	}
+
+	for _, id := range ui.taskService.GetAllSessionIDs() {
+		listItemText := ui.taskService.SessionDisplayString(id)
 		list.AddItem(listItemText, "", 0, nil)
 	}
 
