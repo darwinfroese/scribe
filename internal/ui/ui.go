@@ -13,6 +13,8 @@ const (
 
 	addTaskFormName  = "add-form"
 	editTaskFormName = "edit-form"
+
+	noteFormName = "notes"
 )
 
 type UI struct {
@@ -24,13 +26,17 @@ type UI struct {
 
 	addTaskForm  *form
 	editTaskForm *form
-	activeForm   *form
+
+	addNoteForm *form
+
+	activeForm *form
 
 	pages *tview.Pages
 
 	taskService TaskService
 
-	taskFormOpen       bool
+	formOpen bool
+
 	sessionListFocused bool
 
 	activeTaskList *list
@@ -61,6 +67,9 @@ type TaskService interface {
 
 	GetAllSessionIDs() []int
 	SessionDisplayString(id int) string
+
+	SaveNote(contents string)
+	GetNote() string
 }
 
 func New(taskService TaskService) *UI {
@@ -120,6 +129,8 @@ func (ui *UI) build() {
 	ui.addTaskForm = ui.createForm("Add New", addTaskFormName, ui.addTaskActionHandler)
 	ui.editTaskForm = ui.createForm("Edit", editTaskFormName, ui.editTaskActionHandler)
 
+	ui.addNoteForm = ui.createNoteForm(noteFormName, ui.addNoteActionHandler)
+
 	modal := func(p tview.Primitive, width, height int) tview.Primitive {
 		return tview.NewGrid().
 			SetColumns(0, width, 0).
@@ -147,7 +158,8 @@ func (ui *UI) build() {
 	ui.pages.
 		AddPage("list", flex, true, true).
 		AddPage(addTaskFormName, modal(ui.addTaskForm, 100, 9), true, false).
-		AddPage(editTaskFormName, modal(ui.editTaskForm, 100, 9), true, false)
+		AddPage(editTaskFormName, modal(ui.editTaskForm, 100, 9), true, false).
+		AddPage(noteFormName, modal(ui.addNoteForm, 100, 11), true, false)
 
 	ui.refreshLists()
 

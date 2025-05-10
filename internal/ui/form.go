@@ -35,7 +35,7 @@ func (ui *UI) createForm(action string, name string, actionHandler formActionHan
 	form.AddFormItem(dropDown)
 	form.AddButton("Save", actionHandler(form)).
 		AddButton("Cancel", func() {
-			ui.hideTaskForm(name)
+			ui.hideForm(name)
 		})
 
 	form.SetBorder(true).SetTitle(fmt.Sprintf("%s Task", action))
@@ -49,9 +49,35 @@ func (ui *UI) createForm(action string, name string, actionHandler formActionHan
 	return form
 }
 
+func (ui *UI) createNoteForm(name string, actionHandler formActionHandler) *form {
+	form := &form{
+		Form: tview.NewForm(),
+		name: name,
+	}
+
+	// TODO: style the text area
+	textArea := tview.NewTextArea()
+	form.AddFormItem(textArea)
+
+	form.AddButton("Save", actionHandler(form)).
+		AddButton("Cancel", func() {
+			ui.hideForm(name)
+		})
+
+	form.SetBorder(true).SetTitle("Notes")
+
+	form.SetFieldStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorLightGray))
+	form.SetButtonStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tview.Styles.PrimitiveBackgroundColor))
+	form.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorSlateGray))
+
+	form.SetInputCapture(ui.formInputHandler)
+
+	return form
+}
+
 func (ui *UI) formInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	if event.Key() == tcell.KeyEsc {
-		ui.hideTaskForm(ui.activeForm.name)
+		ui.hideForm(ui.activeForm.name)
 		return nil
 	}
 
@@ -78,10 +104,10 @@ func (ui *UI) showTaskForm(task string, priority int, form string) {
 	ui.pages.ShowPage(form)
 	ui.app.SetFocus(taskInput)
 
-	ui.taskFormOpen = true
+	ui.formOpen = true
 }
 
-func (ui *UI) hideTaskForm(form string) {
+func (ui *UI) hideForm(form string) {
 	ui.pages.HidePage(form)
 
 	if ui.sessionListFocused {
@@ -90,7 +116,21 @@ func (ui *UI) hideTaskForm(form string) {
 		ui.app.SetFocus(ui.activeTaskList)
 	}
 
-	ui.taskFormOpen = false
+	ui.formOpen = false
+}
+
+func (ui *UI) showNoteForm() {
+	ui.activeForm = ui.addNoteForm
+
+	note := ui.taskService.GetNote()
+	input := ui.activeForm.GetFormItem(0).(*tview.TextArea)
+	input.SetText(note, true)
+	ui.app.SetFocus(ui.activeForm)
+	ui.activeForm.SetFocus(0)
+
+	ui.pages.ShowPage(noteFormName)
+
+	ui.formOpen = true
 }
 
 func (ui *UI) addTaskActionHandler(form *form) func() {
@@ -108,7 +148,7 @@ func (ui *UI) addTaskActionHandler(form *form) func() {
 		ui.todoTaskIDs = append(ui.todoTaskIDs, ui.taskService.AddTask(taskDesc, priority))
 		ui.refreshLists()
 
-		ui.hideTaskForm(addTaskFormName)
+		ui.hideForm(addTaskFormName)
 	}
 }
 
@@ -129,6 +169,23 @@ func (ui *UI) editTaskActionHandler(form *form) func() {
 		ui.taskService.EditTask(ui.todoTaskIDs[idx], taskDesc, priority)
 		ui.refreshLists()
 
-		ui.hideTaskForm(editTaskFormName)
+		ui.hideForm(editTaskFormName)
+	}
+}
+
+func (ui *UI) addNoteActionHandler(form *form) func() {
+	return func() {
+		input := form.GetFormItem(0).(*tview.TextArea)
+
+		contents := input.GetText()
+
+		if contents == "" {
+			return
+		}
+
+		ui.taskService.SaveNote(contents)
+		ui.refreshLists()
+
+		ui.hideForm(noteFormName)
 	}
 }

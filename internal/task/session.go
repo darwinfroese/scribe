@@ -9,6 +9,7 @@ import (
 type session struct {
 	ID           int    `json:"id"`
 	Date         string `json:"date"`
+	Note         string `json:"note"`
 	PlannedTasks []int  `json:"planned_tasks"`
 }
 
@@ -48,6 +49,21 @@ func (service *Service) SessionDisplayString(id int) string {
 	}
 
 	return session.Date
+}
+
+func (service *Service) SaveNote(contents string) {
+	session := service.getOrCreateTodaysSession()
+
+	session.Note = contents
+
+	service.saveSession(session)
+	service.write()
+}
+
+func (service *Service) GetNote() string {
+	session := service.getOrCreateTodaysSession()
+
+	return session.Note
 }
 
 func (service *Service) planTask(taskID int) {

@@ -75,6 +75,10 @@ func (ui *UI) refreshSessionList(list *list, ids []int) {
 }
 
 func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
+	if ui.genericListInputHandler(event) == nil {
+		return nil
+	}
+
 	switch event.Rune() {
 	case ' ':
 		index := ui.todoList.GetCurrentItem()
@@ -117,9 +121,6 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		ui.refreshLists()
 
 		return nil
-	case 'a':
-		ui.showNewTaskForm()
-		return nil
 
 	case 'j': // down
 		index := ui.todoList.GetCurrentItem()
@@ -134,16 +135,16 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 			ui.todoList.SetCurrentItem(index - 1)
 		}
 		return nil
-
-	case 'q':
-		ui.app.Stop()
-		return nil
 	}
 
 	return nil
 }
 
 func (ui *UI) completeInputHandler(event *tcell.EventKey) *tcell.EventKey {
+	if ui.genericListInputHandler(event) == nil {
+		return nil
+	}
+
 	switch event.Rune() {
 	case ' ':
 		index := ui.completedList.GetCurrentItem()
@@ -170,9 +171,6 @@ func (ui *UI) completeInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		ui.refreshLists()
 
 		return nil
-	case 'a':
-		ui.showNewTaskForm()
-		return nil
 
 	case 'j': // down
 		index := ui.completedList.GetCurrentItem()
@@ -187,11 +185,25 @@ func (ui *UI) completeInputHandler(event *tcell.EventKey) *tcell.EventKey {
 			ui.completedList.SetCurrentItem(index - 1)
 		}
 		return nil
+	}
+
+	return nil
+}
+
+func (ui *UI) genericListInputHandler(event *tcell.EventKey) *tcell.EventKey {
+	switch event.Rune() {
+	case 'a':
+		ui.showNewTaskForm()
+		return nil
+
+	case 'n':
+		ui.showNoteForm()
+		return nil
 
 	case 'q':
 		ui.app.Stop()
 		return nil
 	}
 
-	return nil
+	return event
 }
