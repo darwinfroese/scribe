@@ -25,7 +25,6 @@ func main() {
 	reportCommand.BoolVar(&args.Global, "global", false, "runs scribe with the global database instead of the local database")
 
 	if len(os.Args) == 1 {
-		fmt.Println("no args")
 		scribe.Scribe(args)
 		return
 	}
@@ -37,6 +36,9 @@ func main() {
 			panic(err)
 		}
 		report.Report(args)
+		// I just like a line break between the end of output and the command line after
+		// an application exits, this is the easiest way to always apply it.
+		fmt.Println()
 	default:
 		// we don't have a sub-command here
 		if err := scribeCommand.Parse(os.Args[1:]); err != nil {

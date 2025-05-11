@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"slices"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -14,28 +12,32 @@ type list struct {
 }
 
 func (ui *UI) refreshLists() {
-	ui.refreshTaskList(ui.todoList, ui.todoTaskIDs, hideCompleted)
-	ui.refreshTaskList(ui.completedList, ui.completedTaskIDs, hideIncomplete)
+	ui.todoTaskIDs = ui.refreshTaskList(ui.todoList, hideCompleted)
+	ui.completedTaskIDs = ui.refreshTaskList(ui.completedList, hideIncomplete)
 
-	ui.refreshSessionList(ui.sessionList, ui.sessionIDs)
+	ui.refreshSessionList(ui.sessionList)
 }
 
-func (ui *UI) refreshTaskList(list *list, ids []int, filter bool) {
+func (ui *UI) refreshTaskList(list *list, filter bool) []int {
 	originalIndex := list.GetCurrentItem()
 	list.Clear()
 
-	if len(ids) == 0 {
-		list.AddItem("No tasks!", "", 0, nil)
-		return
-	}
+	allIDs := ui.taskService.GetAllTaskIDs()
 
-	for _, id := range ui.taskService.GetAllTaskIDs() {
+	newIDs := []int{}
+
+	for _, id := range allIDs {
 		if ui.taskService.IsCompleted(id) == filter {
 			continue
 		}
 
+		newIDs = append(newIDs, id)
 		listItemText := ui.taskService.DisplayString(id)
 		list.AddItem(listItemText, "", 0, nil)
+	}
+
+	if len(newIDs) == 0 {
+		list.AddItem("No Tasks!", "", 0, nil)
 	}
 
 	if list.GetItemCount() > 0 {
@@ -47,19 +49,23 @@ func (ui *UI) refreshTaskList(list *list, ids []int, filter bool) {
 			list.SetCurrentItem(originalIndex)
 		}
 	}
+
+	return newIDs
 }
 
-func (ui *UI) refreshSessionList(list *list, ids []int) {
+func (ui *UI) refreshSessionList(list *list) {
 	originalIndex := list.GetCurrentItem()
 	list.Clear()
 
-	if len(ids) == 0 {
+	sessionIDs := ui.taskService.GetAllSessionIDs()
+
+	if len(sessionIDs) == 0 {
 		list.AddItem("No Sessions!", "", 0, nil)
 		return
 	}
 
-	for _, id := range ui.taskService.GetAllSessionIDs() {
-		listItemText := ui.taskService.SessionDisplayString(id)
+	for idx := len(sessionIDs) - 1; idx >= 0; idx-- {
+		listItemText := ui.taskService.SessionDisplayString(sessionIDs[idx])
 		list.AddItem(listItemText, "", 0, nil)
 	}
 
@@ -81,15 +87,12 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 
 	switch event.Rune() {
 	case ' ':
-		index := ui.todoList.GetCurrentItem()
 		if len(ui.todoTaskIDs) == 0 {
 			return nil
 		}
 
+		index := ui.todoList.GetCurrentItem()
 		ui.taskService.CompleteTask(ui.todoTaskIDs[index])
-
-		ui.completedTaskIDs = append(ui.completedTaskIDs, ui.todoTaskIDs[index])
-		ui.todoTaskIDs = slices.Delete(ui.todoTaskIDs, index, index+1)
 
 		ui.refreshLists()
 		return nil
@@ -117,7 +120,6 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		}
 
 		ui.taskService.DeleteTask(ui.todoTaskIDs[index])
-		ui.todoTaskIDs = slices.Delete(ui.todoTaskIDs, index, index+1)
 		ui.refreshLists()
 
 		return nil
@@ -153,10 +155,6 @@ func (ui *UI) completeInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		}
 
 		ui.taskService.UnCompleteTask(ui.completedTaskIDs[index])
-
-		ui.todoTaskIDs = append(ui.todoTaskIDs, ui.completedTaskIDs[index])
-		ui.completedTaskIDs = slices.Delete(ui.completedTaskIDs, index, index+1)
-
 		ui.refreshLists()
 
 		return nil
@@ -167,7 +165,6 @@ func (ui *UI) completeInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		}
 
 		ui.taskService.DeleteTask(ui.completedTaskIDs[index])
-		ui.completedTaskIDs = slices.Delete(ui.completedTaskIDs, index, index+1)
 		ui.refreshLists()
 
 		return nil

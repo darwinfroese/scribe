@@ -2,6 +2,7 @@ package report
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/darwinfroese/scribe/cmd"
 	"github.com/darwinfroese/scribe/internal/database"
@@ -49,17 +50,79 @@ func Report(args cmd.Args) {
 }
 
 func (svc *service) listAllSessions() {
-	fmt.Println("list not implemented")
+	dates := svc.tasks.GetAllSessionDates()
+
+	printHeader("All Recorded Session Dates")
+
+	for _, date := range dates {
+		fmt.Printf("\t%s\n", date)
+	}
 }
 
 func (svc *service) reportAllSessions() {
-	fmt.Println("all not implemented")
+	sessions := svc.tasks.GetAllSessionIDs()
+
+	printHeader("All Sessions")
+
+	for _, session := range sessions {
+		svc.printSessionDetails(session)
+	}
 }
 
-func (svc *service) reportLastSessions(last int) {
-	fmt.Printf("last not implemented (%d)\n", last)
+func (svc *service) reportLastSessions(lastCount int) {
+	sessions := svc.tasks.GetAllSessionIDs()
+
+	if lastCount > len(sessions) {
+		lastCount = len(sessions)
+	}
+
+	filtered := sessions[len(sessions)-lastCount:]
+
+	for _, id := range filtered {
+		svc.printSessionDetails(id)
+	}
 }
 
 func (svc *service) reportDateRangeSessions(start, end string) {
-	fmt.Printf("date-range not implemented (%s - %s)\n", start, end)
+	sessions := svc.tasks.GetAllSessionIDs()
+
+	printHeader(fmt.Sprintf("Sessions Between %s And %s", start, end))
+
+	for _, session := range sessions {
+		date := svc.tasks.GetSessionDate(session)
+
+		if date >= start && date <= end {
+			svc.printSessionDetails(session)
+		}
+	}
+}
+
+func printHeader(header string) {
+	length := len(header)
+	divider := strings.Repeat("-", length+2)
+
+	fmt.Printf(" %s \n", header)
+	fmt.Println(divider)
+}
+
+func (svc *service) printSessionDetails(sessionID int) {
+	note := svc.tasks.GetNoteForSession(sessionID)
+	completedTasks := svc.tasks.GetCompletedTaskIDsForSession(sessionID)
+	incompleteTasks := svc.tasks.GetIncompleteTaskIDsForSession(sessionID)
+
+	printHeader(svc.tasks.SessionDisplayString(sessionID))
+
+	fmt.Printf("summary: %s\n", note)
+	svc.printTasks("completed tasks:", completedTasks)
+	svc.printTasks("incomplete tasks:", incompleteTasks)
+}
+
+func (svc *service) printTasks(header string, tasks []int) {
+	fmt.Println(header)
+
+	for _, task := range tasks {
+		fmt.Printf("- %s\n", svc.tasks.ReportString(task))
+	}
+
+	fmt.Println()
 }

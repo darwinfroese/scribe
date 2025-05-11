@@ -14,8 +14,8 @@ type session struct {
 }
 
 type sessionStorage struct {
-	NextID   int       `json:"next_id"`
-	Sessions []session `json:"sessions"`
+	NextID   int        `json:"next_id"`
+	Sessions []*session `json:"sessions"`
 }
 
 func (service *Service) GetAllSessionIDs() []int {
@@ -26,6 +26,22 @@ func (service *Service) GetAllSessionIDs() []int {
 	}
 
 	return ids
+}
+
+func (service *Service) GetAllSessionDates() []string {
+	dates := []string{}
+
+	for _, session := range service.storage.Sessions.Sessions {
+		dates = append(dates, session.Date)
+	}
+
+	return dates
+}
+
+func (service *Service) GetSessionDate(id int) string {
+	session := service.getSession(id)
+
+	return session.Date
 }
 
 func (service *Service) TogglePlanTask(taskID int) {
@@ -43,6 +59,10 @@ func (service *Service) TogglePlanTask(taskID int) {
 
 func (service *Service) SessionDisplayString(id int) string {
 	session := service.getSession(id)
+
+	if session.isToday() && len(session.PlannedTasks) == 0 && session.Note == "" {
+		return fmt.Sprintf("[::i][::b]%s[::B][::I]", session.Date)
+	}
 
 	if session.isToday() && len(session.PlannedTasks) > 0 {
 		return fmt.Sprintf("* %s", session.Date)
@@ -62,6 +82,12 @@ func (service *Service) SaveNote(contents string) {
 
 func (service *Service) GetNote() string {
 	session := service.getOrCreateTodaysSession()
+
+	return session.Note
+}
+
+func (service *Service) GetNoteForSession(id int) string {
+	session := service.getSession(id)
 
 	return session.Note
 }
@@ -88,7 +114,7 @@ func (service *Service) unplanTask(taskID int) {
 func (service *Service) saveSession(newSession *session) {
 	for idx, session := range service.storage.Sessions.Sessions {
 		if session.ID == newSession.ID {
-			service.storage.Sessions.Sessions[idx] = *newSession
+			service.storage.Sessions.Sessions[idx] = newSession
 			return
 		}
 	}
@@ -97,7 +123,7 @@ func (service *Service) saveSession(newSession *session) {
 func (service *Service) getSession(id int) *session {
 	for _, session := range service.storage.Sessions.Sessions {
 		if session.ID == id {
-			return &session
+			return session
 		}
 	}
 
@@ -109,7 +135,7 @@ func (service *Service) getOrCreateTodaysSession() *session {
 
 	for _, session := range service.storage.Sessions.Sessions {
 		if session.Date == today {
-			return &session
+			return session
 		}
 	}
 
@@ -119,7 +145,7 @@ func (service *Service) getOrCreateTodaysSession() *session {
 	}
 
 	service.storage.Sessions.NextID++
-	service.storage.Sessions.Sessions = append(service.storage.Sessions.Sessions, session)
+	service.storage.Sessions.Sessions = append(service.storage.Sessions.Sessions, &session)
 
 	return &session
 }

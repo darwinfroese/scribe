@@ -34,10 +34,10 @@ type task struct {
 }
 
 type taskStorage struct {
-	NextID int    `json:"next_id"`
-	Tasks  []task `json:"tasks"`
+	NextID int     `json:"next_id"`
+	Tasks  []*task `json:"tasks"`
 
-	DeletedTasks []task `json:"deleted_tasks"`
+	DeletedTasks []*task `json:"deleted_tasks"`
 }
 
 type storage struct {
@@ -63,8 +63,8 @@ func NewService(db *database.Database) *Service {
 
 	if len(dbContent) == 0 {
 		storage := &storage{}
-		storage.Tasks = &taskStorage{NextID: 0, Tasks: []task{}}
-		storage.Sessions = &sessionStorage{NextID: 0, Sessions: []session{}}
+		storage.Tasks = &taskStorage{NextID: 0, Tasks: make([]*task, 0)}
+		storage.Sessions = &sessionStorage{NextID: 0, Sessions: make([]*session, 0)}
 
 		service.storage = storage
 		return &service
@@ -92,7 +92,7 @@ func (service *Service) AddTask(description string, priority int) int {
 	}
 
 	service.storage.Tasks.NextID++
-	service.storage.Tasks.Tasks = append(service.storage.Tasks.Tasks, ttask)
+	service.storage.Tasks.Tasks = append(service.storage.Tasks.Tasks, &ttask)
 
 	service.write()
 
@@ -121,12 +121,44 @@ func (service *Service) GetCompletedTaskIDs() []int {
 	return ids
 }
 
+func (service *Service) GetCompletedTaskIDsForSession(id int) []int {
+	ids := []int{}
+
+	session := service.getSession(id)
+
+	for _, task := range service.storage.Tasks.Tasks {
+		if task.Completed {
+			if slices.Contains(session.PlannedTasks, task.ID) {
+				ids = append(ids, task.ID)
+			}
+		}
+	}
+
+	return ids
+}
+
 func (service *Service) GetIncompleteTaskIDs() []int {
 	ids := []int{}
 
 	for _, task := range service.storage.Tasks.Tasks {
 		if !task.Completed {
 			ids = append(ids, task.ID)
+		}
+	}
+
+	return ids
+}
+
+func (service *Service) GetIncompleteTaskIDsForSession(id int) []int {
+	ids := []int{}
+
+	session := service.getSession(id)
+
+	for _, task := range service.storage.Tasks.Tasks {
+		if !task.Completed {
+			if slices.Contains(session.PlannedTasks, task.ID) {
+				ids = append(ids, task.ID)
+			}
 		}
 	}
 
@@ -143,8 +175,8 @@ func (service *Service) CompleteTask(id int) {
 				service.planTask(task.ID)
 				task.Planned = true
 			}
-			service.storage.Tasks.Tasks[idx] = task
 
+			service.storage.Tasks.Tasks[idx] = task
 			service.write()
 
 			return
@@ -225,6 +257,17 @@ func (service *Service) DisplayString(id int) string {
 	return display
 }
 
+func (service *Service) ReportString(id int) string {
+	task := service.getTask(id)
+
+	if task == nil {
+		return "unknown task"
+	}
+
+	display := fmt.Sprintf("%s (%s)", task.Description, getPriorityString(task.Priority))
+	return display
+}
+
 func (service *Service) GetTaskDetails(id int) (string, int) {
 	task := service.getTask(id)
 
@@ -245,10 +288,20 @@ func (service *Service) EditTask(id int, description string, priority int) {
 	service.write()
 }
 
+func (service *Service) GetTasksIDsForSession(sessionID int) []int {
+	for _, session := range service.storage.Sessions.Sessions {
+		if session.ID == sessionID {
+			return session.PlannedTasks
+		}
+	}
+
+	return []int{}
+}
+
 func (service *Service) getTask(id int) *task {
 	for _, task := range service.storage.Tasks.Tasks {
 		if task.ID == id {
-			return &task
+			return task
 		}
 	}
 
@@ -258,7 +311,7 @@ func (service *Service) getTask(id int) *task {
 func (service *Service) saveTask(task *task) {
 	for idx, tt := range service.storage.Tasks.Tasks {
 		if tt.ID == task.ID {
-			service.storage.Tasks.Tasks[idx] = *task
+			service.storage.Tasks.Tasks[idx] = task
 			return
 		}
 	}
