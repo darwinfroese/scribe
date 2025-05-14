@@ -55,6 +55,8 @@ func (service *Service) TogglePlanTask(taskID int) {
 	} else {
 		service.unplanTask(taskID)
 	}
+
+	service.write()
 }
 
 func (service *Service) SessionDisplayString(id int) string {
