@@ -13,6 +13,7 @@ type list struct {
 
 func (ui *UI) refresh() {
 	ui.refreshTrees()
+	ui.focus(ui.activeTaskList)
 
 	ui.refreshSessionList(ui.sessionList)
 }
@@ -46,6 +47,28 @@ func (ui *UI) refreshSessionList(list *list) {
 
 func (ui *UI) genericListInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Rune() {
+	case ' ':
+		if len(ui.completedTaskIDs) == 0 {
+			return nil
+		}
+
+		task := ui.activeTaskList.GetCurrentNode().GetReference().(*task)
+		ui.taskService.ToggleComplete(task.id)
+
+		ui.refresh()
+
+		return nil
+	case 'x':
+		if len(ui.completedTaskIDs) == 0 {
+			return nil
+		}
+
+		task := ui.activeTaskList.GetCurrentNode().GetReference().(*task)
+		ui.taskService.DeleteTask(task.id)
+
+		ui.refresh()
+
+		return nil
 	case 'a':
 		ui.showNewTaskForm()
 		return nil

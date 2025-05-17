@@ -157,18 +157,18 @@ func (ui *UI) addTaskActionHandler(form *form) func() {
 func (ui *UI) editTaskActionHandler(form *form) func() {
 	return func() {
 		taskDescInput := form.GetFormItemByLabel("Task:").(*tview.InputField)
-		// priorityDropDown := form.GetFormItemByLabel("Priority:").(*tview.DropDown)
+		priorityDropDown := form.GetFormItemByLabel("Priority:").(*tview.DropDown)
 
 		taskDesc := taskDescInput.GetText()
-		// priority, _ := priorityDropDown.GetCurrentOption()
+		priority, _ := priorityDropDown.GetCurrentOption()
 
 		if taskDesc == "" {
 			return
 		}
 
-		// idx := ui.todoList.GetCurrentItem()
+		task := ui.todoList.GetCurrentNode().GetReference().(*task)
 
-		// ui.taskService.EditTask(ui.todoTaskIDs[idx], taskDesc, priority)
+		ui.taskService.EditTask(task.id, taskDesc, priority)
 		ui.refresh()
 
 		ui.hideForm(editTaskFormName)

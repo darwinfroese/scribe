@@ -165,29 +165,16 @@ func (service *Service) GetIncompleteTaskIDsForSession(id int) []int {
 	return ids
 }
 
-func (service *Service) CompleteTask(id int) {
+func (service *Service) ToggleComplete(id int) {
 	for idx, task := range service.storage.Tasks.Tasks {
 		if task.ID == id {
-			task.Completed = true
+			task.Completed = !task.Completed
 			task.CompletedAt = time.Now()
 
 			if !task.Planned {
 				service.planTask(task.ID)
 				task.Planned = true
 			}
-
-			service.storage.Tasks.Tasks[idx] = task
-			service.write()
-
-			return
-		}
-	}
-}
-
-func (service *Service) UnCompleteTask(id int) {
-	for idx, task := range service.storage.Tasks.Tasks {
-		if task.ID == id {
-			task.Completed = false
 
 			service.storage.Tasks.Tasks[idx] = task
 			service.write()

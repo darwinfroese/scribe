@@ -61,8 +61,7 @@ type TaskService interface {
 	GetIncompleteTaskIDs() []int
 	GetTaskDetails(id int) (string, int)
 
-	CompleteTask(id int)
-	UnCompleteTask(id int)
+	ToggleComplete(id int)
 	DeleteTask(id int)
 	EditTask(id int, description string, priority int)
 
@@ -158,6 +157,7 @@ func (ui *UI) build() {
 		AddPage(editTaskFormName, modal(ui.editTaskForm, 100, 9), true, false).
 		AddPage(noteFormName, modal(ui.addNoteForm, 100, 11), true, false)
 
+	ui.activeTaskList = ui.todoList
 	ui.refresh()
 
 	ui.todoList.SetInputCapture(ui.listInputHandler())

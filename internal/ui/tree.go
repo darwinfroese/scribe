@@ -21,6 +21,7 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) []*task {
 	allIDs := ui.taskService.GetAllTaskIDs()
 
 	newIDs := []*task{}
+	tree.GetRoot().ClearChildren()
 
 	for _, id := range allIDs {
 		if ui.taskService.IsCompleted(id) == filter {
@@ -72,30 +73,13 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	}
 
 	switch event.Rune() {
-	case ' ':
-		if len(ui.todoTaskIDs) == 0 {
-			return nil
-		}
-
-		// index := ui.todoList.GetCurrentItem()
-		// ui.taskService.CompleteTask(ui.todoTaskIDs[index])
-		//
-		// ui.refreshLists()
-		return nil
 	case 'e':
-		// index := ui.todoList.GetCurrentItem()
-		// if len(ui.todoTaskIDs) == 0 {
-		// 	return nil
-		// }
-		//
-		// task, priority := ui.taskService.GetTaskDetails(ui.todoTaskIDs[index])
-		// ui.showEditTaskForm(task, priority)
+		task := ui.todoList.GetCurrentNode().GetReference().(*task)
+		text, priority := ui.taskService.GetTaskDetails(task.id)
+		ui.showEditTaskForm(text, priority)
+
 		return nil
 	case 'p':
-		if len(ui.todoTaskIDs) == 0 {
-			return nil
-		}
-
 		task := ui.todoList.GetCurrentNode().GetReference().(*task)
 		ui.taskService.TogglePlanTask(task.id)
 
@@ -105,64 +89,13 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		ui.todoList.GetCurrentNode().SetReference(task)
 
 		return nil
-	case 'x':
-		// index := ui.todoList.GetCurrentItem()
-		// if len(ui.todoTaskIDs) == 0 {
-		// 	return nil
-		// }
-		//
-		// ui.taskService.DeleteTask(ui.todoTaskIDs[index])
-		// ui.refreshLists()
-
-		return nil
 	}
 
 	return nil
 }
 
 func (ui *UI) completeInputHandler(event *tcell.EventKey) *tcell.EventKey {
-	if ui.genericListInputHandler(event) == nil {
-		return nil
-	}
-
-	switch event.Rune() {
-	case ' ':
-		// index := ui.completedList.GetCurrentItem()
-		// if len(ui.completedTaskIDs) == 0 {
-		// 	return nil
-		// }
-		//
-		// ui.taskService.UnCompleteTask(ui.completedTaskIDs[index])
-		// ui.refreshLists()
-
-		return nil
-	case 'x':
-		// index := ui.completedList.GetCurrentItem()
-		// if len(ui.completedTaskIDs) == 0 {
-		// 	return nil
-		// }
-		//
-		// ui.taskService.DeleteTask(ui.completedTaskIDs[index])
-		// ui.refreshLists()
-
-		return nil
-
-		// case 'j': // down
-		// 	index := ui.completedList.GetCurrentItem()
-		// 	if index < ui.taskService.Count()-1 {
-		// 		ui.completedList.SetCurrentItem(index + 1)
-		// 	}
-		// 	return nil
-		//
-		// case 'k': // up
-		// 	index := ui.completedList.GetCurrentItem()
-		// 	if index > 0 {
-		// 		ui.completedList.SetCurrentItem(index - 1)
-		// 	}
-		// 	return nil
-	}
-
-	return nil
+	return ui.genericListInputHandler(event)
 }
 
 func setCurrentNode(tree *tree, node *tview.TreeNode) {

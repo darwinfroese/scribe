@@ -15,7 +15,8 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 			}
 
 			ui.activeTaskList = ui.completedList
-			ui.app.SetFocus(ui.activeTaskList)
+			ui.focus(ui.activeTaskList)
+
 			return nil
 
 		case tcell.KeyCtrlK: // up
@@ -24,7 +25,8 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 			}
 
 			ui.activeTaskList = ui.todoList
-			ui.app.SetFocus(ui.activeTaskList)
+			ui.focus(ui.activeTaskList)
+
 			return nil
 
 		case tcell.KeyCtrlL: // right
@@ -34,6 +36,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 
 			ui.sessionListFocused = true
 			ui.app.SetFocus(ui.sessionList)
+			ui.focus(nil)
 			return nil
 
 		case tcell.KeyCtrlH: // left
@@ -42,7 +45,8 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 			}
 
 			ui.sessionListFocused = false
-			ui.app.SetFocus(ui.activeTaskList)
+
+			ui.focus(ui.activeTaskList)
 			return nil
 
 		case tcell.KeyEnter:
@@ -51,4 +55,18 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 
 		return event
 	}
+}
+
+func (ui *UI) focus(tree *tree) {
+	ui.todoList.SetCurrentNode(nil)
+	ui.completedList.SetCurrentNode(nil)
+
+	// so that we can clear the trees when switching
+	// to session list
+	if tree == nil {
+		return
+	}
+
+	ui.app.SetFocus(tree)
+	tree.SetCurrentNode(tree.GetRoot().GetChildren()[0])
 }
