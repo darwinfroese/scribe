@@ -28,7 +28,7 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 		}
 
 		if !ui.taskService.HasParent(id) {
-			// we should catch these recursively
+			// children should be caught recursively
 			ui.addNode(tree.GetRoot(), id)
 		}
 	}
