@@ -145,9 +145,7 @@ func (ui *UI) addTaskActionHandler(form *form) func() {
 			return
 		}
 
-		id := ui.taskService.AddTask(taskDesc, priority)
-		text := ui.taskService.DisplayString(id)
-		ui.todoTaskIDs = append(ui.todoTaskIDs, &task{id, text})
+		ui.taskService.AddTask(taskDesc, priority)
 		ui.refresh()
 
 		ui.hideForm(addTaskFormName)

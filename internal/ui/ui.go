@@ -26,23 +26,17 @@ type UI struct {
 
 	addTaskForm  *form
 	editTaskForm *form
-
-	addNoteForm *form
-
-	activeForm *form
+	addNoteForm  *form
 
 	pages *tview.Pages
 
 	taskService TaskService
 
-	formOpen bool
-
+	formOpen           bool
 	sessionListFocused bool
 
 	activeTaskList *tree
-
-	todoTaskIDs      []*task
-	completedTaskIDs []*task
+	activeForm     *form
 
 	sessionIDs []int
 }
@@ -53,7 +47,7 @@ type task struct {
 }
 
 type TaskService interface {
-	AddTask(description string, priority int) int
+	AddTask(description string, priority int)
 	Count() int
 
 	GetAllTaskIDs() []int
@@ -61,13 +55,19 @@ type TaskService interface {
 	GetIncompleteTaskIDs() []int
 	GetTaskDetails(id int) (string, int)
 
+	GetChildren(id int) []int
+
 	ToggleComplete(id int)
+	AddChild(parentID int, childID int)
 	DeleteTask(id int)
 	EditTask(id int, description string, priority int)
 
 	TogglePlanTask(id int)
 
 	IsCompleted(id int) bool
+	HasChildren(id int) bool
+	HasParent(id int) bool
+
 	DisplayString(id int) string
 
 	GetAllSessionIDs() []int
@@ -172,8 +172,8 @@ func (ui *UI) loadTasks() {
 	completedTaskIDs := ui.taskService.GetCompletedTaskIDs()
 	todoTaskIDs := ui.taskService.GetIncompleteTaskIDs()
 
-	ui.completedTaskIDs = ui.createTasksFromIDs(completedTaskIDs)
-	ui.todoTaskIDs = ui.createTasksFromIDs(todoTaskIDs)
+	ui.createTasksFromIDs(completedTaskIDs)
+	ui.createTasksFromIDs(todoTaskIDs)
 }
 
 func (ui *UI) createTasksFromIDs(ids []int) []*task {
@@ -194,7 +194,7 @@ func createTree() *tview.TreeView {
 
 	baseTree := tview.NewTreeView().
 		SetGraphics(false).
-		SetPrefixes([]string{"", "- "}).
+		SetPrefixes([]string{"", "- ", "  - "}).
 		SetRoot(root)
 
 	return baseTree

@@ -29,8 +29,9 @@ type task struct {
 	Description string    `json:"description"`
 	CompletedAt time.Time `json:"completed_at"`
 
-	Parent   int   `json:"parent"`
-	Children []int `json:"children"`
+	HasParent bool  `json:"has_parent"`
+	Parent    int   `json:"parent"`
+	Children  []int `json:"children"`
 }
 
 type taskStorage struct {
@@ -82,7 +83,7 @@ func NewService(db *database.Database) *Service {
 	return &service
 }
 
-func (service *Service) AddTask(description string, priority int) int {
+func (service *Service) AddTask(description string, priority int) {
 	ttask := task{
 		ID:          service.storage.Tasks.NextID,
 		Description: description,
@@ -95,8 +96,6 @@ func (service *Service) AddTask(description string, priority int) int {
 	service.storage.Tasks.Tasks = append(service.storage.Tasks.Tasks, &ttask)
 
 	service.write()
-
-	return ttask.ID
 }
 
 func (service *Service) GetAllTaskIDs() []int {
@@ -165,6 +164,12 @@ func (service *Service) GetIncompleteTaskIDsForSession(id int) []int {
 	return ids
 }
 
+func (service *Service) GetChildren(id int) []int {
+	task := service.getTask(id)
+
+	return task.Children
+}
+
 func (service *Service) ToggleComplete(id int) {
 	for idx, task := range service.storage.Tasks.Tasks {
 		if task.ID == id {
@@ -182,6 +187,20 @@ func (service *Service) ToggleComplete(id int) {
 			return
 		}
 	}
+}
+
+func (service *Service) AddChild(parentID, childID int) {
+	parent := service.getTask(parentID)
+	child := service.getTask(childID)
+
+	parent.Children = append(parent.Children, child.ID)
+	child.Parent = parent.ID
+	child.HasParent = true
+
+	service.saveTask(parent)
+	service.saveTask(child)
+
+	service.write()
 }
 
 func (service *Service) DeleteTask(id int) {
@@ -222,6 +241,18 @@ func (service *Service) IsCompleted(id int) bool {
 	}
 
 	return task.Completed
+}
+
+func (service *Service) HasChildren(id int) bool {
+	task := service.getTask(id)
+
+	return len(task.Children) > 0
+}
+
+func (service *Service) HasParent(id int) bool {
+	task := service.getTask(id)
+
+	return task.HasParent
 }
 
 func (service *Service) DisplayString(id int) string {
