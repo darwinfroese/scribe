@@ -145,8 +145,10 @@ func (ui *UI) addTaskActionHandler(form *form) func() {
 			return
 		}
 
-		ui.todoTaskIDs = append(ui.todoTaskIDs, ui.taskService.AddTask(taskDesc, priority))
-		ui.refreshLists()
+		id := ui.taskService.AddTask(taskDesc, priority)
+		text := ui.taskService.DisplayString(id)
+		ui.todoTaskIDs = append(ui.todoTaskIDs, &task{id, text})
+		ui.refresh()
 
 		ui.hideForm(addTaskFormName)
 	}
@@ -155,19 +157,19 @@ func (ui *UI) addTaskActionHandler(form *form) func() {
 func (ui *UI) editTaskActionHandler(form *form) func() {
 	return func() {
 		taskDescInput := form.GetFormItemByLabel("Task:").(*tview.InputField)
-		priorityDropDown := form.GetFormItemByLabel("Priority:").(*tview.DropDown)
+		// priorityDropDown := form.GetFormItemByLabel("Priority:").(*tview.DropDown)
 
 		taskDesc := taskDescInput.GetText()
-		priority, _ := priorityDropDown.GetCurrentOption()
+		// priority, _ := priorityDropDown.GetCurrentOption()
 
 		if taskDesc == "" {
 			return
 		}
 
-		idx := ui.todoList.GetCurrentItem()
+		// idx := ui.todoList.GetCurrentItem()
 
-		ui.taskService.EditTask(ui.todoTaskIDs[idx], taskDesc, priority)
-		ui.refreshLists()
+		// ui.taskService.EditTask(ui.todoTaskIDs[idx], taskDesc, priority)
+		ui.refresh()
 
 		ui.hideForm(editTaskFormName)
 	}
@@ -184,7 +186,7 @@ func (ui *UI) addNoteActionHandler(form *form) func() {
 		}
 
 		ui.taskService.SaveNote(contents)
-		ui.refreshLists()
+		ui.refresh()
 
 		ui.hideForm(noteFormName)
 	}

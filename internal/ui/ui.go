@@ -20,8 +20,8 @@ const (
 type UI struct {
 	app *tview.Application
 
-	todoList      *list
-	completedList *list
+	todoList      *tree
+	completedList *tree
 	sessionList   *list
 
 	addTaskForm  *form
@@ -39,11 +39,17 @@ type UI struct {
 
 	sessionListFocused bool
 
-	activeTaskList *list
+	activeTaskList *tree
 
-	todoTaskIDs      []int
-	completedTaskIDs []int
-	sessionIDs       []int
+	todoTaskIDs      []*task
+	completedTaskIDs []*task
+
+	sessionIDs []int
+}
+
+type task struct {
+	id   int
+	text string
 }
 
 type TaskService interface {
@@ -87,9 +93,8 @@ func New(taskService TaskService) *UI {
 		taskService: taskService,
 	}
 
-	ui.completedTaskIDs = ui.taskService.GetCompletedTaskIDs()
-	ui.todoTaskIDs = ui.taskService.GetIncompleteTaskIDs()
 	ui.sessionIDs = ui.taskService.GetAllSessionIDs()
+	ui.loadTasks()
 
 	ui.build()
 
@@ -105,22 +110,14 @@ func (ui *UI) Run() {
 func (ui *UI) build() {
 	ui.app = tview.NewApplication()
 
-	ui.todoList = &list{
-		List: tview.NewList().
-			ShowSecondaryText(false).
-			SetSelectedFocusOnly(true).
-			SetHighlightFullLine(true).
-			SetSelectedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3))),
+	ui.todoList = &tree{
+		TreeView:    createTree(),
 		handleInput: ui.wipInputHandler,
 	}
-	ui.todoList.SetBorder(true).SetTitle(" Tasks (Space: Complete | a: Add | q: Quit) ")
+	ui.todoList.SetBorder(true).SetTitle(" Todo Tasks ")
 
-	ui.completedList = &list{
-		List: tview.NewList().
-			ShowSecondaryText(false).
-			SetSelectedFocusOnly(true).
-			SetHighlightFullLine(true).
-			SetSelectedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3))),
+	ui.completedList = &tree{
+		TreeView:    createTree(),
 		handleInput: ui.completeInputHandler,
 	}
 	ui.completedList.SetBorder(true).SetTitle(" Completed Tasks ")
@@ -161,7 +158,7 @@ func (ui *UI) build() {
 		AddPage(editTaskFormName, modal(ui.editTaskForm, 100, 9), true, false).
 		AddPage(noteFormName, modal(ui.addNoteForm, 100, 11), true, false)
 
-	ui.refreshLists()
+	ui.refresh()
 
 	ui.todoList.SetInputCapture(ui.listInputHandler())
 	ui.completedList.SetInputCapture(ui.listInputHandler())
@@ -169,4 +166,36 @@ func (ui *UI) build() {
 
 	ui.activeTaskList = ui.todoList
 	ui.app.SetRoot(ui.pages, true)
+}
+
+func (ui *UI) loadTasks() {
+	completedTaskIDs := ui.taskService.GetCompletedTaskIDs()
+	todoTaskIDs := ui.taskService.GetIncompleteTaskIDs()
+
+	ui.completedTaskIDs = ui.createTasksFromIDs(completedTaskIDs)
+	ui.todoTaskIDs = ui.createTasksFromIDs(todoTaskIDs)
+}
+
+func (ui *UI) createTasksFromIDs(ids []int) []*task {
+	tasks := []*task{}
+
+	for _, id := range ids {
+		text := ui.taskService.DisplayString(id)
+
+		tasks = append(tasks, &task{id, text})
+	}
+
+	return tasks
+}
+
+func createTree() *tview.TreeView {
+	root := tview.NewTreeNode("").
+		SetSelectable(false)
+
+	baseTree := tview.NewTreeView().
+		SetGraphics(false).
+		SetPrefixes([]string{"", "- "}).
+		SetRoot(root)
+
+	return baseTree
 }

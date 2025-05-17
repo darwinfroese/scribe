@@ -251,7 +251,7 @@ func (service *Service) DisplayString(id int) string {
 	}
 
 	if task.Planned && service.taskPlannedToday(task.ID) {
-		display = fmt.Sprintf("* %s", display)
+		display = fmt.Sprintf("[::b]%s[::B]", display)
 	}
 
 	return display
