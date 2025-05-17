@@ -37,7 +37,6 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) []*task {
 		node := tview.NewTreeNode(listItemText).
 			SetSelectedTextStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3))).
 			SetReference(task)
-		// .SetSelectable()
 
 		tree.GetRoot().AddChild(node)
 	}
@@ -54,16 +53,6 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) []*task {
 		setCurrentNode(tree, current)
 	}
 
-	// if list.GetItemCount() > 0 {
-	// 	if originalIndex >= list.GetItemCount() {
-	// 		list.SetCurrentItem(list.GetItemCount() - 1)
-	// 	} else if originalIndex < 0 && list.GetItemCount() > 0 {
-	// 		list.SetCurrentItem(0)
-	// 	} else {
-	// 		list.SetCurrentItem(originalIndex)
-	// 	}
-	// }
-
 	return newIDs
 }
 
@@ -73,6 +62,44 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	}
 
 	switch event.Rune() {
+	case 'K': // UP
+		children := ui.activeTaskList.GetRoot().GetChildren()
+		selected := ui.activeTaskList.GetCurrentNode()
+
+		for idx, child := range children {
+			if child == selected {
+				if idx == 0 {
+					return nil
+				}
+
+				children[idx] = children[idx-1]
+				children[idx-1] = selected
+				ui.activeTaskList.GetRoot().SetChildren(children)
+
+				return nil
+			}
+		}
+
+		return nil
+	case 'J':
+		children := ui.activeTaskList.GetRoot().GetChildren()
+		selected := ui.activeTaskList.GetCurrentNode()
+
+		for idx, child := range children {
+			if child == selected {
+				if idx == len(children)-1 {
+					return nil
+				}
+
+				children[idx] = children[idx+1]
+				children[idx+1] = selected
+				ui.activeTaskList.GetRoot().SetChildren(children)
+
+				return nil
+			}
+		}
+
+		return nil
 	case 'e':
 		task := ui.todoList.GetCurrentNode().GetReference().(*task)
 		text, priority := ui.taskService.GetTaskDetails(task.id)
@@ -91,7 +118,7 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
-	return nil
+	return event
 }
 
 func (ui *UI) completeInputHandler(event *tcell.EventKey) *tcell.EventKey {

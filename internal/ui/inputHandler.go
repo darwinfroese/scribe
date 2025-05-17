@@ -6,9 +6,11 @@ import (
 
 func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
+		if ui.activeTaskList.handleInput(event) == nil {
+			return nil
+		}
+
 		switch event.Key() {
-		case tcell.KeyRune:
-			ui.activeTaskList.handleInput(event)
 		case tcell.KeyCtrlJ: // down
 			if ui.formOpen || ui.sessionListFocused {
 				return event
