@@ -62,7 +62,7 @@ func (ui *UI) genericListInputHandler(event *tcell.EventKey) *tcell.EventKey {
 
 		return nil
 	case 'a':
-		ui.showNewTaskForm()
+		ui.showNewTaskForm(false, 0, nil)
 		return nil
 
 	case 'n':

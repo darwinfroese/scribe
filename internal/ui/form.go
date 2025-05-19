@@ -15,10 +15,22 @@ type form struct {
 	name string
 }
 
-func (ui *UI) createForm(action string, name string, actionHandler formActionHandler) *form {
+func (ui *UI) createForm(action string, name string, childForm bool, actionHandler formActionHandler) *form {
 	form := &form{
 		Form: tview.NewForm(),
 		name: name,
+	}
+
+	if childForm {
+		parent := tview.NewDropDown().SetLabel("Parent:").SetOptions([]string{}, nil)
+
+		parent.SetFocusedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorSlateGray))
+		parent.SetListStyles(
+			tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tview.Styles.PrimitiveBackgroundColor),
+			tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
+		parent.SetPrefixStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
+
+		form.AddFormItem(parent)
 	}
 
 	taskInput := tview.NewInputField().SetLabel("Task:").SetFieldWidth(80)
@@ -84,9 +96,32 @@ func (ui *UI) formInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	return event
 }
 
-func (ui *UI) showNewTaskForm() {
-	ui.activeForm = ui.addTaskForm
-	ui.showTaskForm("", 0, addTaskFormName)
+func (ui *UI) showNewTaskForm(child bool, parentID int, parents []int) {
+	if !child {
+		ui.activeForm = ui.addTaskForm
+		ui.showTaskForm("", 0, addTaskFormName)
+
+		return
+	}
+
+	parentDrop := ui.addChildTaskForm.GetFormItemByLabel("Parent:").(*tview.DropDown)
+
+	options := []string{}
+	selected := 0
+
+	for idx, parent := range parents {
+		if parent == parentID {
+			selected = idx
+		}
+
+		options = append(options, ui.taskService.FormDisplayString(parent))
+	}
+
+	parentDrop.SetOptions(options, nil)
+	parentDrop.SetCurrentOption(selected)
+
+	ui.activeForm = ui.addChildTaskForm
+	ui.showTaskForm("", 0, addChildTaskFormName)
 }
 
 func (ui *UI) showEditTaskForm(task string, priority int) {
@@ -149,6 +184,27 @@ func (ui *UI) addTaskActionHandler(form *form) func() {
 		ui.refresh()
 
 		ui.hideForm(addTaskFormName)
+	}
+}
+
+func (ui *UI) addChildTaskActionHandler(form *form) func() {
+	return func() {
+		parentDropDown := form.GetFormItemByLabel("Parent:").(*tview.DropDown)
+		taskDescInput := form.GetFormItemByLabel("Task:").(*tview.InputField)
+		priorityDropDown := form.GetFormItemByLabel("Priority:").(*tview.DropDown)
+
+		taskDesc := taskDescInput.GetText()
+		priority, _ := priorityDropDown.GetCurrentOption()
+		_, parent := parentDropDown.GetCurrentOption()
+
+		if taskDesc == "" {
+			return
+		}
+
+		ui.taskService.AddChildTask(taskDesc, priority, parent)
+		ui.refresh()
+
+		ui.hideForm(addChildTaskFormName)
 	}
 }
 

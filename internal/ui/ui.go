@@ -11,8 +11,9 @@ const (
 	hideCompleted  = true
 	hideIncomplete = false
 
-	addTaskFormName  = "add-form"
-	editTaskFormName = "edit-form"
+	addTaskFormName      = "add-form"
+	addChildTaskFormName = "add-child-form"
+	editTaskFormName     = "edit-form"
 
 	noteFormName = "notes"
 )
@@ -24,9 +25,10 @@ type UI struct {
 	completedList *tree
 	sessionList   *list
 
-	addTaskForm  *form
-	editTaskForm *form
-	addNoteForm  *form
+	addTaskForm      *form
+	addChildTaskForm *form
+	editTaskForm     *form
+	addNoteForm      *form
 
 	pages *tview.Pages
 
@@ -48,6 +50,7 @@ type task struct {
 
 type TaskService interface {
 	AddTask(description string, priority int)
+	AddChildTask(description string, priority int, parentDisplay string)
 	Count() int
 
 	GetAllTaskIDs() []int
@@ -55,6 +58,8 @@ type TaskService interface {
 	GetIncompleteTaskIDs() []int
 	GetTaskDetails(id int) (string, int)
 
+	GetParent(id int) int
+	GetAllParents() []int
 	GetChildren(id int) []int
 
 	ToggleComplete(id int)
@@ -69,6 +74,7 @@ type TaskService interface {
 	HasChildren(id int) bool
 	HasParent(id int) bool
 
+	FormDisplayString(id int) string
 	DisplayString(id int) string
 
 	GetAllSessionIDs() []int
@@ -123,8 +129,9 @@ func (ui *UI) build() {
 	ui.completedList.SetBorder(true).SetTitle(" Completed Tasks ")
 
 	ui.pages = tview.NewPages()
-	ui.addTaskForm = ui.createForm("Add New", addTaskFormName, ui.addTaskActionHandler)
-	ui.editTaskForm = ui.createForm("Edit", editTaskFormName, ui.editTaskActionHandler)
+	ui.addTaskForm = ui.createForm("Add New", addTaskFormName, false, ui.addTaskActionHandler)
+	ui.addChildTaskForm = ui.createForm("Add New Child", addChildTaskFormName, true, ui.addChildTaskActionHandler)
+	ui.editTaskForm = ui.createForm("Edit", editTaskFormName, false, ui.editTaskActionHandler)
 
 	ui.addNoteForm = ui.createNoteForm(noteFormName, ui.addNoteActionHandler)
 
@@ -155,6 +162,7 @@ func (ui *UI) build() {
 	ui.pages.
 		AddPage("list", flex, true, true).
 		AddPage(addTaskFormName, modal(ui.addTaskForm, 100, 9), true, false).
+		AddPage(addChildTaskFormName, modal(ui.addChildTaskForm, 100, 11), true, false).
 		AddPage(editTaskFormName, modal(ui.editTaskForm, 100, 9), true, false).
 		AddPage(noteFormName, modal(ui.addNoteForm, 100, 11), true, false)
 

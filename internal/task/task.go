@@ -98,6 +98,37 @@ func (service *Service) AddTask(description string, priority int) {
 	service.write()
 }
 
+func (service *Service) AddChildTask(description string, priority int, parentDisplay string) {
+	ttask := task{
+		ID:          service.storage.Tasks.NextID,
+		Description: description,
+		Priority:    priority,
+		Completed:   false,
+		Planned:     false,
+	}
+
+	parents := service.GetAllParents()
+	for _, parent := range parents {
+		display := service.FormDisplayString(parent)
+
+		if display == parentDisplay {
+			parentTask := service.getTask(parent)
+
+			ttask.Parent = parent
+			ttask.HasParent = true
+			parentTask.Children = append(parentTask.Children, ttask.ID)
+
+			service.saveTask(parentTask)
+			break
+		}
+	}
+
+	service.storage.Tasks.NextID++
+	service.storage.Tasks.Tasks = append(service.storage.Tasks.Tasks, &ttask)
+
+	service.write()
+}
+
 func (service *Service) GetAllTaskIDs() []int {
 	ids := []int{}
 
@@ -162,6 +193,29 @@ func (service *Service) GetIncompleteTaskIDsForSession(id int) []int {
 	}
 
 	return ids
+}
+
+func (service *Service) GetParent(id int) int {
+	task := service.getTask(id)
+
+	if !task.HasParent {
+		return task.ID
+	}
+
+	return service.getTask(task.Parent).ID
+}
+
+func (service *Service) GetAllParents() []int {
+	tasks := service.storage.Tasks.Tasks
+	parents := []int{}
+
+	for _, task := range tasks {
+		if !task.HasParent {
+			parents = append(parents, task.ID)
+		}
+	}
+
+	return parents
 }
 
 func (service *Service) GetChildren(id int) []int {
@@ -294,6 +348,12 @@ func (service *Service) HasParent(id int) bool {
 	task := service.getTask(id)
 
 	return task.HasParent
+}
+
+func (service *Service) FormDisplayString(id int) string {
+	task := service.getTask(id)
+
+	return fmt.Sprintf("%d - %s", task.ID, task.Description)
 }
 
 func (service *Service) DisplayString(id int) string {

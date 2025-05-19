@@ -72,6 +72,13 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	}
 
 	switch event.Rune() {
+	case 'A':
+		selected := ui.activeTaskList.GetCurrentNode().GetReference().(*task)
+		parent := ui.taskService.GetParent(selected.id)
+		parents := ui.taskService.GetAllParents()
+
+		ui.showNewTaskForm(true, parent, parents)
+		return nil
 	case 'K': // UP
 		children := ui.activeTaskList.GetRoot().GetChildren()
 		selected := ui.activeTaskList.GetCurrentNode()
