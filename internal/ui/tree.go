@@ -125,10 +125,14 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		ui.todoList.GetCurrentNode().SetText(task.text)
 		ui.todoList.GetCurrentNode().SetReference(task)
 
+		ui.refresh()
+
 		return nil
 	case 't':
 		children := ui.todoList.GetRoot().GetChildren()
 		selected := ui.todoList.GetCurrentNode()
+
+		selectedTask := selected.GetReference().(*task)
 
 		for idx, child := range children {
 			if child == selected {
@@ -137,7 +141,6 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 				}
 
 				parent := children[idx-1].GetReference().(*task)
-				selectedTask := selected.GetReference().(*task)
 
 				ui.taskService.AddChild(parent.id, selectedTask.id)
 				ui.refresh()
@@ -145,6 +148,12 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 				return nil
 			}
 		}
+
+		// if we made it here we have a child task
+		ui.taskService.RemoveChild(selectedTask.id)
+		ui.refresh()
+
+		return nil
 	}
 
 	return event

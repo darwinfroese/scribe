@@ -3,6 +3,7 @@ package task
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -56,21 +57,37 @@ func (service *Service) TogglePlanTask(taskID int) {
 		service.unplanTask(taskID)
 	}
 
+	if task.HasParent {
+		service.planParent(task.Parent)
+	}
+
+	if len(task.Children) > 0 {
+		service.planAllChildren(task.Planned, task.ID, task.Children)
+	}
+
 	service.write()
 }
 
 func (service *Service) SessionDisplayString(id int) string {
 	session := service.getSession(id)
 
-	if session.isToday() && len(session.PlannedTasks) == 0 && session.Note == "" {
-		return fmt.Sprintf("[::i][::b]%s[::B][::I]", session.Date)
+	format := ""
+
+	if !session.isToday() {
+		format = "i"
+	} else {
+		format = "b"
 	}
 
-	if session.isToday() && len(session.PlannedTasks) > 0 {
-		return fmt.Sprintf("* %s", session.Date)
-	}
+	completedTasks := len(service.GetCompletedTaskIDsForSession(session.ID))
 
-	return session.Date
+	return fmt.Sprintf("[::%s]%s (%d/%d)[::%s] ",
+		format,
+		session.Date,
+		completedTasks,
+		len(session.PlannedTasks),
+		strings.ToUpper(format),
+	)
 }
 
 func (service *Service) SaveNote(contents string) {
@@ -164,6 +181,53 @@ func (service *Service) taskPlannedToday(id int) bool {
 	}
 
 	return false
+}
+
+func (service *Service) planParent(parentID int) {
+	parent := service.getTask(parentID)
+
+	parentPlanned := true
+	for _, childID := range parent.Children {
+		child := service.getTask(childID)
+		if !child.Planned {
+			parentPlanned = false
+			break
+		}
+	}
+
+	parent.Planned = parentPlanned
+	if parentPlanned {
+		service.planTask(parent.ID)
+	} else {
+		service.unplanTask(parent.ID)
+	}
+	service.saveTask(parent)
+}
+
+func (service *Service) planAllChildren(planned bool, parentID int, children []int) {
+	parent := service.getTask(parentID)
+	parent.Planned = planned
+
+	if parent.Planned {
+		service.planTask(parent.ID)
+	} else {
+		service.unplanTask(parent.ID)
+	}
+
+	for _, childID := range children {
+		child := service.getTask(childID)
+		child.Planned = planned
+
+		if child.Planned {
+			service.planTask(childID)
+		} else {
+			service.unplanTask(childID)
+		}
+
+		service.saveTask(child)
+	}
+
+	service.saveTask(parent)
 }
 
 func (session *session) isToday() bool {

@@ -193,9 +193,34 @@ func (service *Service) AddChild(parentID, childID int) {
 	parent := service.getTask(parentID)
 	child := service.getTask(childID)
 
+	// don't allow nesting more than one level
+	if len(child.Children) > 0 {
+		return
+	}
+
 	parent.Children = append(parent.Children, child.ID)
 	child.Parent = parent.ID
 	child.HasParent = true
+
+	service.saveTask(parent)
+	service.saveTask(child)
+
+	service.write()
+}
+
+func (service *Service) RemoveChild(childID int) {
+	child := service.getTask(childID)
+
+	if !child.HasParent {
+		return
+	}
+
+	parent := service.getTask(child.Parent)
+
+	idx := slices.Index(parent.Children, child.ID)
+	parent.Children = slices.Delete(parent.Children, idx, idx+1)
+	child.Parent = 0
+	child.HasParent = false
 
 	service.saveTask(parent)
 	service.saveTask(child)
@@ -221,6 +246,22 @@ func (service *Service) DeleteTask(id int) {
 	}
 
 	task := service.storage.Tasks.Tasks[idxToDelete]
+
+	if task.HasParent {
+		service.RemoveChild(task.ID)
+	}
+
+	if len(task.Children) > 0 {
+		for _, childID := range task.Children {
+			child := service.getTask(childID)
+
+			child.HasParent = false
+			child.Parent = 0
+
+			service.saveTask(child)
+		}
+	}
+
 	service.storage.Tasks.Tasks = slices.Delete(service.storage.Tasks.Tasks, idxToDelete, idxToDelete+1)
 	service.storage.Tasks.DeletedTasks = append(service.storage.Tasks.DeletedTasks, task)
 
@@ -258,21 +299,25 @@ func (service *Service) HasParent(id int) bool {
 func (service *Service) DisplayString(id int) string {
 	task := service.getTask(id)
 
+	prefix := "○"
+
 	if task == nil {
 		return "unknown task"
 	}
 
-	display := fmt.Sprintf("%s [%s::i](%s)[white::I]", task.Description, getPriorityColor(task.Priority), getPriorityString(task.Priority))
-
-	if task.Completed {
-		display = fmt.Sprintf("%s [gray::i]%s[white::I]", display, task.CompletedAt.Format(time.DateOnly))
-	}
+	display := fmt.Sprintf("%s [%s::](%s)[white::]", task.Description, getPriorityColor(task.Priority), getPriorityString(task.Priority))
 
 	if task.Planned && service.taskPlannedToday(task.ID) {
+		prefix = "🡢"
 		display = fmt.Sprintf("[::b]%s[::B]", display)
 	}
 
-	return display
+	if task.Completed {
+		prefix = "✓"
+		display = fmt.Sprintf("[::i]%s[::I] [gray::i]%s[white::I]", display, task.CompletedAt.Format(time.DateOnly))
+	}
+
+	return fmt.Sprintf("%s %s", prefix, display)
 }
 
 func (service *Service) ReportString(id int) string {

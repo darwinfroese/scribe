@@ -59,6 +59,7 @@ type TaskService interface {
 
 	ToggleComplete(id int)
 	AddChild(parentID int, childID int)
+	RemoveChild(childID int)
 	DeleteTask(id int)
 	EditTask(id int, description string, priority int)
 
@@ -194,7 +195,7 @@ func createTree() *tview.TreeView {
 
 	baseTree := tview.NewTreeView().
 		SetGraphics(false).
-		SetPrefixes([]string{"", "- ", "  - "}).
+		SetPrefixes([]string{""}). // we handle the prefixes in the DisplayString func
 		SetRoot(root)
 
 	return baseTree
