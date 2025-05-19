@@ -22,15 +22,15 @@ func (ui *UI) refreshSessionList(list *list) {
 	originalIndex := list.GetCurrentItem()
 	list.Clear()
 
-	sessionIDs := ui.taskService.GetAllSessionIDs()
+	sessionIDs := ui.taskService.GetAllSessionIDs(true)
 
 	if len(sessionIDs) == 0 {
 		list.AddItem("No Sessions!", "", 0, nil)
 		return
 	}
 
-	for idx := len(sessionIDs) - 1; idx >= 0; idx-- {
-		listItemText := ui.taskService.SessionDisplayString(sessionIDs[idx])
+	for _, id := range sessionIDs {
+		listItemText := ui.taskService.SessionDisplayString(id)
 		list.AddItem(listItemText, "", 0, nil)
 	}
 

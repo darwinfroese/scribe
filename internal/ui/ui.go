@@ -77,7 +77,7 @@ type TaskService interface {
 	FormDisplayString(id int) string
 	DisplayString(id int) string
 
-	GetAllSessionIDs() []int
+	GetAllSessionIDs(reverse bool) []int
 	SessionDisplayString(id int) string
 
 	SaveNote(contents string)
@@ -99,7 +99,7 @@ func New(taskService TaskService) *UI {
 		taskService: taskService,
 	}
 
-	ui.sessionIDs = ui.taskService.GetAllSessionIDs()
+	ui.sessionIDs = ui.taskService.GetAllSessionIDs(true)
 	ui.loadTasks()
 
 	ui.build()

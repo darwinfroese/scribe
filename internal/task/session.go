@@ -19,11 +19,15 @@ type sessionStorage struct {
 	Sessions []*session `json:"sessions"`
 }
 
-func (service *Service) GetAllSessionIDs() []int {
+func (service *Service) GetAllSessionIDs(reverse bool) []int {
 	ids := []int{}
 
 	for _, session := range service.storage.Sessions.Sessions {
 		ids = append(ids, session.ID)
+	}
+
+	if reverse {
+		slices.Reverse(ids)
 	}
 
 	return ids
@@ -79,14 +83,22 @@ func (service *Service) SessionDisplayString(id int) string {
 		format = "b"
 	}
 
+	return fmt.Sprintf("[::%s]%s[::%s] ",
+		format,
+		service.SessionDisplayStringPlainText(id),
+		strings.ToUpper(format),
+	)
+}
+
+func (service *Service) SessionDisplayStringPlainText(id int) string {
+	session := service.getSession(id)
+
 	completedTasks := len(service.GetCompletedTaskIDsForSession(session.ID))
 
-	return fmt.Sprintf("[::%s]%s (%d/%d)[::%s] ",
-		format,
+	return fmt.Sprintf("%s (%d/%d)",
 		session.Date,
 		completedTasks,
 		len(session.PlannedTasks),
-		strings.ToUpper(format),
 	)
 }
 

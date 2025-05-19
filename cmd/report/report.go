@@ -60,7 +60,7 @@ func (svc *service) listAllSessions() {
 }
 
 func (svc *service) reportAllSessions() {
-	sessions := svc.tasks.GetAllSessionIDs()
+	sessions := svc.tasks.GetAllSessionIDs(true)
 
 	printHeader("All Sessions")
 
@@ -70,7 +70,7 @@ func (svc *service) reportAllSessions() {
 }
 
 func (svc *service) reportLastSessions(lastCount int) {
-	sessions := svc.tasks.GetAllSessionIDs()
+	sessions := svc.tasks.GetAllSessionIDs(true)
 
 	if lastCount > len(sessions) {
 		lastCount = len(sessions)
@@ -84,7 +84,7 @@ func (svc *service) reportLastSessions(lastCount int) {
 }
 
 func (svc *service) reportDateRangeSessions(start, end string) {
-	sessions := svc.tasks.GetAllSessionIDs()
+	sessions := svc.tasks.GetAllSessionIDs(true)
 
 	printHeader(fmt.Sprintf("Sessions Between %s And %s", start, end))
 
@@ -110,18 +110,24 @@ func (svc *service) printSessionDetails(sessionID int) {
 	completedTasks := svc.tasks.GetCompletedTaskIDsForSession(sessionID)
 	incompleteTasks := svc.tasks.GetIncompleteTaskIDsForSession(sessionID)
 
-	printHeader(svc.tasks.SessionDisplayString(sessionID))
+	printHeader(svc.tasks.SessionDisplayStringPlainText(sessionID))
 
 	fmt.Printf("summary: %s\n", note)
-	svc.printTasks("completed tasks:", completedTasks)
-	svc.printTasks("incomplete tasks:", incompleteTasks)
+	svc.printTasks("completed tasks:", completedTasks, true)
+	svc.printTasks("incomplete tasks:", incompleteTasks, false)
 }
 
-func (svc *service) printTasks(header string, tasks []int) {
+func (svc *service) printTasks(header string, tasks []int, completed bool) {
 	fmt.Println(header)
 
+	prefix := "🡢"
+
+	if completed {
+		prefix = "✓"
+	}
+
 	for _, task := range tasks {
-		fmt.Printf("- %s\n", svc.tasks.ReportString(task))
+		fmt.Printf("%s %s\n", prefix, svc.tasks.ReportString(task))
 	}
 
 	fmt.Println()
