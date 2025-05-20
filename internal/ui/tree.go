@@ -37,6 +37,9 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 		node := tview.NewTreeNode("No Tasks!").
 			SetSelectedTextStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
 		tree.GetRoot().AddChild(node)
+
+		tree.SetCurrentNode(node)
+		return
 	}
 
 	if current == nil {
