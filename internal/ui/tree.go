@@ -73,8 +73,13 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 
 	switch event.Rune() {
 	case 'A':
-		selected := ui.activeTaskList.GetCurrentNode().GetReference().(*task)
-		parent := ui.taskService.GetParent(selected.id)
+		selected := ui.activeTaskList.GetCurrentNode().GetReference()
+		if selected == nil {
+			return event
+		}
+
+		task := selected.(*task)
+		parent := ui.taskService.GetParent(task.id)
 		parents := ui.taskService.GetAllParents()
 
 		ui.showNewTaskForm(true, parent, parents)
@@ -118,13 +123,23 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 
 		return nil
 	case 'e':
-		task := ui.todoList.GetCurrentNode().GetReference().(*task)
+		selected := ui.todoList.GetCurrentNode().GetReference()
+		if selected == nil {
+			return nil
+		}
+
+		task := selected.(*task)
 		text, priority := ui.taskService.GetTaskDetails(task.id)
 		ui.showEditTaskForm(text, priority)
 
 		return nil
 	case 'p':
-		task := ui.todoList.GetCurrentNode().GetReference().(*task)
+		selected := ui.todoList.GetCurrentNode().GetReference()
+		if selected == nil {
+			return event
+		}
+
+		task := selected.(*task)
 		ui.taskService.TogglePlanTask(task.id)
 
 		task.text = ui.taskService.DisplayString(task.id)
@@ -137,9 +152,13 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		return nil
 	case 't':
 		children := ui.todoList.GetRoot().GetChildren()
-		selected := ui.todoList.GetCurrentNode()
+		selected := ui.todoList.GetCurrentNode().GetReference()
 
-		selectedTask := selected.GetReference().(*task)
+		if selected == nil {
+			return event
+		}
+
+		selectedTask := selected.(*task)
 
 		for idx, child := range children {
 			if child == selected {

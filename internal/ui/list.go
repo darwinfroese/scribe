@@ -48,14 +48,24 @@ func (ui *UI) refreshSessionList(list *list) {
 func (ui *UI) genericListInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Rune() {
 	case ' ':
-		task := ui.activeTaskList.GetCurrentNode().GetReference().(*task)
+		selected := ui.activeTaskList.GetCurrentNode().GetReference()
+		if selected == nil {
+			return event
+		}
+
+		task := selected.(*task)
 		ui.taskService.ToggleComplete(task.id)
 
 		ui.refresh()
 
 		return nil
 	case 'x':
-		task := ui.activeTaskList.GetCurrentNode().GetReference().(*task)
+		selected := ui.activeTaskList.GetCurrentNode().GetReference()
+		if selected == nil {
+			return event
+		}
+
+		task := selected.(*task)
 		ui.taskService.DeleteTask(task.id)
 
 		ui.refresh()
