@@ -368,7 +368,7 @@ func (service *Service) DisplayString(id int) string {
 	display := fmt.Sprintf("%s [%s::](%s)[white::]", task.Description, getPriorityColor(task.Priority), getPriorityString(task.Priority))
 
 	if task.Planned && service.taskPlannedToday(task.ID) {
-		prefix = "🡢"
+		prefix = "→"
 		display = fmt.Sprintf("[::b]%s[::B]", display)
 	}
 
