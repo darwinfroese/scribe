@@ -5,6 +5,8 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+
+	Task "github.com/darwinfroese/scribe/internal/task"
 )
 
 const (
@@ -54,7 +56,7 @@ type TaskService interface {
 	Count() int
 
 	GetAllTaskIDs() []int
-	GetCompletedTaskIDs() []int
+	GetCompletedTaskIDs(sortOrder int) []int
 	GetIncompleteTaskIDs() []int
 	GetTaskDetails(id int) (string, int)
 
@@ -178,7 +180,7 @@ func (ui *UI) build() {
 }
 
 func (ui *UI) loadTasks() {
-	completedTaskIDs := ui.taskService.GetCompletedTaskIDs()
+	completedTaskIDs := ui.taskService.GetCompletedTaskIDs(Task.SortOrderCompletedDateDesc)
 	todoTaskIDs := ui.taskService.GetIncompleteTaskIDs()
 
 	ui.createTasksFromIDs(completedTaskIDs)

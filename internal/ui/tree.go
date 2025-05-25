@@ -3,6 +3,8 @@ package ui
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+
+	Task "github.com/darwinfroese/scribe/internal/task"
 )
 
 type tree struct {
@@ -18,11 +20,17 @@ func (ui *UI) refreshTrees() {
 
 func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 	current := tree.GetCurrentNode()
-	allIDs := ui.taskService.GetAllTaskIDs()
+	var ids []int
+
+	if filter == hideCompleted {
+		ids = ui.taskService.GetIncompleteTaskIDs()
+	} else {
+		ids = ui.taskService.GetCompletedTaskIDs(Task.SortOrderCompletedDateDesc)
+	}
 
 	tree.GetRoot().ClearChildren()
 
-	for _, id := range allIDs {
+	for _, id := range ids {
 		if ui.taskService.IsCompleted(id) == filter {
 			continue
 		}

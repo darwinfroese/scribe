@@ -15,6 +15,10 @@ const (
 	priorityHigh
 	priorityMedium
 	priorityLow
+
+	SortOrderNone = iota
+	SortOrderCompletedDateDesc
+	SortOrderCompletedDateAsc
 )
 
 // task is the internal task structure used for managing task details
@@ -146,13 +150,20 @@ func (service *Service) GetAllTaskIDs() []int {
 	return ids
 }
 
-func (service *Service) GetCompletedTaskIDs() []int {
+func (service *Service) GetCompletedTaskIDs(ordering int) []int {
 	ids := []int{}
 
 	for _, task := range service.storage.Tasks.Tasks {
 		if task.Completed {
 			ids = append(ids, task.ID)
 		}
+	}
+
+	switch ordering {
+	case SortOrderCompletedDateDesc:
+		slices.SortFunc(ids, service.sortOrderCompletedDateFunc(sortOrderDesc))
+	case SortOrderCompletedDateAsc:
+		slices.SortFunc(ids, service.sortOrderCompletedDateFunc(sortOrderAsc))
 	}
 
 	return ids
