@@ -12,10 +12,10 @@ type list struct {
 }
 
 func (ui *UI) refresh() {
-	ui.refreshTrees()
-	ui.focus(ui.activeTaskList)
-
 	ui.refreshSessionList(ui.sessionList)
+	ui.refreshTrees()
+
+	ui.focus(ui.activeTaskList)
 }
 
 func (ui *UI) refreshSessionList(list *list) {
@@ -45,7 +45,7 @@ func (ui *UI) refreshSessionList(list *list) {
 	}
 }
 
-func (ui *UI) genericListInputHandler(event *tcell.EventKey) *tcell.EventKey {
+func (ui *UI) genericTreeInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Rune() {
 	case ' ':
 		selected := ui.activeTaskList.GetCurrentNode().GetReference()

@@ -4,11 +4,20 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+// this is our entrypoint for handling all inputs
 func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
+		if !ui.sessionListFocused {
+			// if sessionListFocused is true then CurrentNode will be nil
+			ui.focusCurrentNode()
+		}
+
+		// let the child lists active inputHandler be called first
 		if ui.activeTaskList.handleInput(event) == nil {
 			return nil
 		}
+
+		// TODO: ui.sessionList.handleInput(event)
 
 		switch event.Key() {
 		case tcell.KeyCtrlJ: // down
@@ -16,7 +25,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 				return event
 			}
 
-			ui.activeTaskList.focusedNode = ui.activeTaskList.GetCurrentNode()
+			ui.focusCurrentNode()
 			ui.activeTaskList = ui.completedList
 			ui.focus(ui.activeTaskList)
 
@@ -27,7 +36,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 				return event
 			}
 
-			ui.activeTaskList.focusedNode = ui.activeTaskList.GetCurrentNode()
+			ui.focusCurrentNode()
 			ui.activeTaskList = ui.todoList
 			ui.focus(ui.activeTaskList)
 
@@ -38,7 +47,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 				return event
 			}
 
-			ui.activeTaskList.focusedNode = ui.activeTaskList.GetCurrentNode()
+			ui.focusCurrentNode()
 			ui.sessionListFocused = true
 			ui.app.SetFocus(ui.sessionList)
 			ui.focus(nil)
@@ -60,6 +69,10 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 
 		return event
 	}
+}
+
+func (ui *UI) focusCurrentNode() {
+	ui.activeTaskList.focusedNode = ui.activeTaskList.GetCurrentNode()
 }
 
 func (ui *UI) focus(tree *tree) {

@@ -20,7 +20,6 @@ func (ui *UI) refreshTrees() {
 }
 
 func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
-	current := tree.GetCurrentNode()
 	var ids []int
 
 	if filter == hideCompleted {
@@ -52,12 +51,6 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 		return
 	}
 
-	if current == nil {
-		tree.SetCurrentNode(tree.GetRoot().GetChildren()[0])
-	} else {
-		setCurrentNode(tree, current)
-	}
-
 	if tree.focusedNode == nil {
 		tree.focusedNode = tree.GetRoot().GetChildren()[0]
 	}
@@ -84,7 +77,7 @@ func (ui *UI) addNode(base *tview.TreeNode, id int) {
 }
 
 func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
-	if ui.genericListInputHandler(event) == nil {
+	if ui.genericTreeInputHandler(event) == nil {
 		return nil
 	}
 
@@ -164,7 +157,6 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		ui.todoList.GetCurrentNode().SetText(task.text)
 		ui.todoList.GetCurrentNode().SetReference(task)
 
-		ui.todoList.focusedNode = ui.todoList.GetCurrentNode()
 		ui.refresh()
 
 		return nil
@@ -204,18 +196,5 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 }
 
 func (ui *UI) completeInputHandler(event *tcell.EventKey) *tcell.EventKey {
-	return ui.genericListInputHandler(event)
-}
-
-func setCurrentNode(tree *tree, node *tview.TreeNode) {
-	selectedTask := node.GetReference().(*task)
-
-	for _, child := range tree.GetRoot().GetChildren() {
-		ttask := child.GetReference().(*task)
-
-		if ttask.id == selectedTask.id {
-			tree.SetCurrentNode(child)
-			return
-		}
-	}
+	return ui.genericTreeInputHandler(event)
 }
