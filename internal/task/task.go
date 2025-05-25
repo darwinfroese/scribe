@@ -22,12 +22,13 @@ const (
 // this task will be serialized and written to a file for persistence
 // the fields need to be exposed.
 type task struct {
-	ID          int       `json:"id"`
-	Completed   bool      `json:"completed"`
-	Planned     bool      `json:"planned"`
-	Priority    int       `json:"priority"`
-	Description string    `json:"description"`
-	CompletedAt time.Time `json:"completed_at"`
+	ID                int       `json:"id"`
+	Completed         bool      `json:"completed"`
+	Planned           bool      `json:"planned"`
+	Priority          int       `json:"priority"`
+	InheritedPriority int       `json:"inherited_priority"`
+	Description       string    `json:"description"`
+	CompletedAt       time.Time `json:"completed_at"`
 
 	HasParent bool  `json:"has_parent"`
 	Parent    int   `json:"parent"`
@@ -85,11 +86,12 @@ func NewService(db *database.Database) *Service {
 
 func (service *Service) AddTask(description string, priority int) {
 	ttask := task{
-		ID:          service.storage.Tasks.NextID,
-		Description: description,
-		Priority:    priority,
-		Completed:   false,
-		Planned:     false,
+		ID:                service.storage.Tasks.NextID,
+		Description:       description,
+		Priority:          priority,
+		InheritedPriority: priority,
+		Completed:         false,
+		Planned:           false,
 	}
 
 	service.storage.Tasks.NextID++
@@ -100,11 +102,12 @@ func (service *Service) AddTask(description string, priority int) {
 
 func (service *Service) AddChildTask(description string, priority int, parentDisplay string) {
 	ttask := task{
-		ID:          service.storage.Tasks.NextID,
-		Description: description,
-		Priority:    priority,
-		Completed:   false,
-		Planned:     false,
+		ID:                service.storage.Tasks.NextID,
+		Description:       description,
+		Priority:          priority,
+		InheritedPriority: priority,
+		Completed:         false,
+		Planned:           false,
 	}
 
 	parents := service.GetAllParents()
@@ -117,6 +120,10 @@ func (service *Service) AddChildTask(description string, priority int, parentDis
 			ttask.Parent = parent
 			ttask.HasParent = true
 			parentTask.Children = append(parentTask.Children, ttask.ID)
+
+			if ttask.Priority < parentTask.Priority && ttask.Priority < parentTask.InheritedPriority {
+				parentTask.InheritedPriority = ttask.Priority
+			}
 
 			service.saveTask(parentTask)
 			break
@@ -230,6 +237,11 @@ func (service *Service) ToggleComplete(id int) {
 			task.Completed = !task.Completed
 			task.CompletedAt = time.Now()
 
+			if task.HasParent {
+				service.completeParent(task)
+				service.adjustParentPriority(task)
+			}
+
 			if !task.Planned {
 				service.planTask(task.ID)
 				task.Planned = true
@@ -275,6 +287,12 @@ func (service *Service) RemoveChild(childID int) {
 	parent.Children = slices.Delete(parent.Children, idx, idx+1)
 	child.Parent = 0
 	child.HasParent = false
+
+	if len(parent.Children) == 0 {
+		parent.InheritedPriority = priorityLow
+	} else {
+		service.adjustParentPriority(parent)
+	}
 
 	service.saveTask(parent)
 	service.saveTask(child)
@@ -365,7 +383,8 @@ func (service *Service) DisplayString(id int) string {
 		return "unknown task"
 	}
 
-	display := fmt.Sprintf("%s [%s::](%s)[white::]", task.Description, getPriorityColor(task.Priority), getPriorityString(task.Priority))
+	priority := min(task.Priority, task.InheritedPriority)
+	display := fmt.Sprintf("%s [%s::](%s)[white::]", task.Description, getPriorityColor(priority), getPriorityString(priority))
 
 	if task.Planned && service.taskPlannedToday(task.ID) {
 		prefix = "→"
@@ -387,6 +406,7 @@ func (service *Service) ReportString(id int) string {
 		return "unknown task"
 	}
 
+	// TODO: when updating this to support parent/child, use min(task.Priority, task.InheritedPriority)
 	display := fmt.Sprintf("%s (%s)", task.Description, getPriorityString(task.Priority))
 	return display
 }
@@ -419,6 +439,46 @@ func (service *Service) GetTasksIDsForSession(sessionID int) []int {
 	}
 
 	return []int{}
+}
+
+func (service *Service) adjustParentPriority(pTask *task) {
+	var parent *task
+
+	if pTask.HasParent {
+		parent = service.getTask(pTask.Parent)
+	} else {
+		parent = pTask
+	}
+
+	if parent.Completed {
+		return
+	}
+
+	highestPriority := priorityLow
+	for _, child := range parent.Children {
+		cTask := service.getTask(child)
+
+		if !cTask.Completed && cTask.Priority < highestPriority {
+			highestPriority = cTask.Priority
+		}
+	}
+
+	parent.InheritedPriority = highestPriority
+	service.saveTask(parent)
+}
+
+func (service *Service) completeParent(task *task) {
+	parent := service.getTask(task.Parent)
+
+	for _, child := range parent.Children {
+		cTask := service.getTask(child)
+
+		if !cTask.Completed {
+			return
+		}
+	}
+
+	service.ToggleComplete(parent.ID)
 }
 
 func (service *Service) getTask(id int) *task {
