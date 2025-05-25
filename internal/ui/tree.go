@@ -11,6 +11,7 @@ type tree struct {
 	*tview.TreeView
 
 	handleInput func(*tcell.EventKey) *tcell.EventKey
+	focusedNode *tview.TreeNode
 }
 
 func (ui *UI) refreshTrees() {
@@ -45,6 +46,7 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 		node := tview.NewTreeNode("No Tasks!").
 			SetSelectedTextStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
 		tree.GetRoot().AddChild(node)
+		tree.focusedNode = node
 
 		tree.SetCurrentNode(node)
 		return
@@ -54,6 +56,10 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 		tree.SetCurrentNode(tree.GetRoot().GetChildren()[0])
 	} else {
 		setCurrentNode(tree, current)
+	}
+
+	if tree.focusedNode == nil {
+		tree.focusedNode = tree.GetRoot().GetChildren()[0]
 	}
 }
 
@@ -158,6 +164,7 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		ui.todoList.GetCurrentNode().SetText(task.text)
 		ui.todoList.GetCurrentNode().SetReference(task)
 
+		ui.todoList.focusedNode = ui.todoList.GetCurrentNode()
 		ui.refresh()
 
 		return nil

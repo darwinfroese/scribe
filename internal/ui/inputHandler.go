@@ -16,6 +16,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 				return event
 			}
 
+			ui.activeTaskList.focusedNode = ui.activeTaskList.GetCurrentNode()
 			ui.activeTaskList = ui.completedList
 			ui.focus(ui.activeTaskList)
 
@@ -26,6 +27,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 				return event
 			}
 
+			ui.activeTaskList.focusedNode = ui.activeTaskList.GetCurrentNode()
 			ui.activeTaskList = ui.todoList
 			ui.focus(ui.activeTaskList)
 
@@ -36,6 +38,7 @@ func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 				return event
 			}
 
+			ui.activeTaskList.focusedNode = ui.activeTaskList.GetCurrentNode()
 			ui.sessionListFocused = true
 			ui.app.SetFocus(ui.sessionList)
 			ui.focus(nil)
@@ -70,5 +73,5 @@ func (ui *UI) focus(tree *tree) {
 	}
 
 	ui.app.SetFocus(tree)
-	tree.SetCurrentNode(tree.GetRoot().GetChildren()[0])
+	tree.SetCurrentNode(tree.focusedNode)
 }
