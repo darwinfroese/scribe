@@ -70,7 +70,7 @@ func (svc *service) reportAllSessions() {
 }
 
 func (svc *service) reportLastSessions(lastCount int) {
-	sessions := svc.tasks.GetAllSessionIDs(true)
+	sessions := svc.tasks.GetAllSessionIDs(false)
 
 	if lastCount > len(sessions) {
 		lastCount = len(sessions)
@@ -112,7 +112,7 @@ func (svc *service) printSessionDetails(sessionID int) {
 
 	printHeader(svc.tasks.SessionDisplayStringPlainText(sessionID))
 
-	fmt.Printf("summary: %s\n", note)
+	fmt.Printf("summary: %s\n\n", note)
 	svc.printTasks("completed tasks:", completedTasks, true)
 	svc.printTasks("incomplete tasks:", incompleteTasks, false)
 }
