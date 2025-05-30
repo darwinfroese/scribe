@@ -7,3 +7,4 @@ scribe
 **/.DS_Store
 # Added by goreleaser init:
 dist/
+__debug*
