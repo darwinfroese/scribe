@@ -126,6 +126,10 @@ func (service *Service) GetNoteForSession(id int) string {
 func (service *Service) planTask(taskID int) {
 	session := service.getOrCreateTodaysSession()
 
+	if slices.Contains(session.PlannedTasks, taskID) {
+		return
+	}
+
 	session.PlannedTasks = append(session.PlannedTasks, taskID)
 	service.saveSession(session)
 }
@@ -228,6 +232,10 @@ func (service *Service) planAllChildren(planned bool, parentID int, children []i
 
 	for _, childID := range children {
 		child := service.getTask(childID)
+		if child.Planned == parent.Planned {
+			continue
+		}
+
 		child.Planned = planned
 
 		if child.Planned {

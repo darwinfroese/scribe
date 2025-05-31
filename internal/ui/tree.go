@@ -212,7 +212,8 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		selectedTask := selected.(*task)
 
 		for idx, child := range children {
-			if child == selected {
+			childTask := child.GetReference().(*task)
+			if childTask.id == selectedTask.id {
 				if idx == 0 {
 					return nil
 				}
@@ -225,10 +226,6 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 				return nil
 			}
 		}
-
-		// if we made it here we have a child task
-		ui.taskService.RemoveChild(selectedTask.id)
-		ui.refresh()
 
 		return nil
 	}
