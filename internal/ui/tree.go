@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"slices"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
@@ -12,6 +14,45 @@ type tree struct {
 
 	handleInput func(*tcell.EventKey) *tcell.EventKey
 	focusedNode *tview.TreeNode
+}
+
+func (ui *UI) setCurrentNode(t *tree, node *tview.TreeNode) {
+	task := node.GetReference().(*task)
+	root := t.GetRoot()
+
+	if ui.taskService.HasParent(task.id) {
+		parentID := ui.taskService.GetParent(task.id)
+		root = ui.findNode(root, parentID)
+	}
+
+	if root == nil {
+		t.SetCurrentNode(t.GetRoot().GetChildren()[0])
+		return
+	}
+
+	target := ui.findNode(root, task.id)
+
+	if target != nil {
+		t.SetCurrentNode(target)
+	} else {
+		// TODO: when we have an "order" field select the next closest in the order
+		t.SetCurrentNode(root.GetChildren()[0])
+	}
+}
+
+func (ui *UI) findNode(root *tview.TreeNode, id int) *tview.TreeNode {
+	children := root.GetChildren()
+	idx := slices.IndexFunc(children, func(node *tview.TreeNode) bool {
+		nTask := node.GetReference().(*task)
+
+		return nTask.id == id
+	})
+
+	if idx == -1 {
+		return nil
+	}
+
+	return children[idx]
 }
 
 func (ui *UI) refreshTrees() {

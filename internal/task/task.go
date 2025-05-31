@@ -376,6 +376,10 @@ func (service *Service) HasChildren(id int) bool {
 func (service *Service) HasParent(id int) bool {
 	task := service.getTask(id)
 
+	if task == nil {
+		return false
+	}
+
 	return task.HasParent
 }
 

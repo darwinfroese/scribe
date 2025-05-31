@@ -86,5 +86,5 @@ func (ui *UI) focus(tree *tree) {
 	}
 
 	ui.app.SetFocus(tree)
-	tree.SetCurrentNode(tree.focusedNode)
+	ui.setCurrentNode(tree, tree.focusedNode)
 }
