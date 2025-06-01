@@ -129,7 +129,7 @@ func (service *Service) AddChildTask(description string, priority int, parentDis
 				parentTask.InheritedPriority = ttask.Priority
 			}
 
-			service.saveTask(parentTask)
+			service.updateTask(parentTask)
 			break
 		}
 	}
@@ -279,8 +279,8 @@ func (service *Service) AddChild(parentID, childID int) {
 	child.Parent = parent.ID
 	child.HasParent = true
 
-	service.saveTask(parent)
-	service.saveTask(child)
+	service.updateTask(parent)
+	service.updateTask(child)
 
 	service.write()
 }
@@ -305,8 +305,8 @@ func (service *Service) RemoveChild(childID int) {
 		service.adjustParentPriority(parent)
 	}
 
-	service.saveTask(parent)
-	service.saveTask(child)
+	service.updateTask(parent)
+	service.updateTask(child)
 
 	service.write()
 }
@@ -341,7 +341,7 @@ func (service *Service) DeleteTask(id int) {
 			child.HasParent = false
 			child.Parent = 0
 
-			service.saveTask(child)
+			service.updateTask(child)
 		}
 	}
 
@@ -433,16 +433,25 @@ func (service *Service) GetTaskDetails(id int) (string, int) {
 }
 
 func (service *Service) EditTask(id int, description string, priority int) {
-	for idx, task := range service.storage.Tasks.Tasks {
-		if task.ID == id {
-			task.Description = description
-			task.Priority = priority
+	task := service.getTask(id)
 
-			service.storage.Tasks.Tasks[idx] = task
-			break
-		}
+	task.Description = description
+	task.Priority = priority
+
+	// if we are childless or a parent
+	if len(task.Children) == 0 {
+		task.InheritedPriority = priority
+	} else {
+		task.InheritedPriority = min(task.InheritedPriority, priority)
 	}
 
+	if task.HasParent {
+		parent := service.getTask(task.Parent)
+		parent.InheritedPriority = min(task.InheritedPriority, priority)
+		service.updateTask(parent)
+	}
+
+	service.updateTask(task)
 	service.write()
 }
 
@@ -479,7 +488,9 @@ func (service *Service) adjustParentPriority(pTask *task) {
 	}
 
 	parent.InheritedPriority = highestPriority
-	service.saveTask(parent)
+
+	service.updateTask(parent)
+	service.write()
 }
 
 func (service *Service) completeParent(task *task) {
@@ -506,7 +517,7 @@ func (service *Service) getTask(id int) *task {
 	return nil
 }
 
-func (service *Service) saveTask(task *task) {
+func (service *Service) updateTask(task *task) {
 	for idx, tt := range service.storage.Tasks.Tasks {
 		if tt.ID == task.ID {
 			service.storage.Tasks.Tasks[idx] = task

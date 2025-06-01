@@ -53,7 +53,7 @@ func (service *Service) TogglePlanTask(taskID int) {
 	task := service.getTask(taskID)
 
 	task.Planned = !task.Planned
-	service.saveTask(task)
+	service.updateTask(task)
 
 	if task.Planned {
 		service.planTask(taskID)
@@ -217,7 +217,8 @@ func (service *Service) planParent(parentID int) {
 	} else {
 		service.unplanTask(parent.ID)
 	}
-	service.saveTask(parent)
+
+	service.updateTask(parent)
 }
 
 func (service *Service) planAllChildren(planned bool, parentID int, children []int) {
@@ -244,10 +245,10 @@ func (service *Service) planAllChildren(planned bool, parentID int, children []i
 			service.unplanTask(childID)
 		}
 
-		service.saveTask(child)
+		service.updateTask(child)
 	}
 
-	service.saveTask(parent)
+	service.updateTask(parent)
 }
 
 func (session *session) isToday() bool {
