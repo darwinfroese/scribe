@@ -48,10 +48,14 @@ func (ui *UI) refreshSessionList(list *list) {
 func (ui *UI) genericTreeInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Rune() {
 	case ' ':
-		selected := ui.activeTaskList.GetCurrentNode().GetReference()
+		selectedNode := ui.activeTaskList.GetCurrentNode()
+		selected := selectedNode.GetReference()
+
 		if selected == nil {
 			return event
 		}
+
+		ui.selectNextClosest(ui.activeTaskList, selectedNode)
 
 		task := selected.(*task)
 		ui.taskService.ToggleComplete(task.id)
@@ -60,10 +64,13 @@ func (ui *UI) genericTreeInputHandler(event *tcell.EventKey) *tcell.EventKey {
 
 		return nil
 	case 'x':
-		selected := ui.activeTaskList.GetCurrentNode().GetReference()
+		selectedNode := ui.activeTaskList.GetCurrentNode()
+		selected := selectedNode.GetReference()
 		if selected == nil {
 			return event
 		}
+
+		ui.selectNextClosest(ui.activeTaskList, selectedNode)
 
 		task := selected.(*task)
 		ui.taskService.DeleteTask(task.id)

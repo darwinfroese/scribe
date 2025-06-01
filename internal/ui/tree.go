@@ -16,6 +16,12 @@ type tree struct {
 	focusedNode *tview.TreeNode
 }
 
+func (ui *UI) selectNextClosest(tree *tree, node *tview.TreeNode) {
+	// if we are deleting a child, select the next child (favor up)
+	// if we are deleting the only child, select the parent
+	// if we are deleting a top level item, select the next top level item (favor up)
+}
+
 func (ui *UI) setCurrentNode(t *tree, node *tview.TreeNode) {
 	task := node.GetReference().(*task)
 	root := t.GetRoot()
