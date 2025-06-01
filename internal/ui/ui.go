@@ -39,6 +39,8 @@ type UI struct {
 	formOpen           bool
 	sessionListFocused bool
 
+	todoListSortOrder int
+
 	activeTaskList *tree
 	activeForm     *form
 
@@ -57,12 +59,12 @@ type TaskService interface {
 
 	GetAllTaskIDs() []int
 	GetCompletedTaskIDs(sortOrder int) []int
-	GetIncompleteTaskIDs() []int
+	GetIncompleteTaskIDs(sortOrder int) []int
 	GetTaskDetails(id int) (string, int)
 
 	GetParent(id int) int
 	GetAllParents() []int
-	GetChildren(id int) []int
+	GetChildren(id, sortOrder int) []int
 
 	ToggleComplete(id int)
 	AddChild(parentID int, childID int)
@@ -98,7 +100,8 @@ func New(taskService TaskService) *UI {
 	tview.Styles = theme
 
 	ui := &UI{
-		taskService: taskService,
+		taskService:       taskService,
+		todoListSortOrder: Task.SortOrderNone,
 	}
 
 	ui.sessionIDs = ui.taskService.GetAllSessionIDs(true)
@@ -181,7 +184,7 @@ func (ui *UI) build() {
 
 func (ui *UI) loadTasks() {
 	completedTaskIDs := ui.taskService.GetCompletedTaskIDs(Task.SortOrderCompletedDateDesc)
-	todoTaskIDs := ui.taskService.GetIncompleteTaskIDs()
+	todoTaskIDs := ui.taskService.GetIncompleteTaskIDs(ui.todoListSortOrder)
 
 	ui.createTasksFromIDs(completedTaskIDs)
 	ui.createTasksFromIDs(todoTaskIDs)

@@ -31,3 +31,27 @@ func (service *Service) sortOrderCompletedDateFunc(sortOrder int) func(a, b int)
 		return order
 	}
 }
+
+func (service *Service) sortOrderPriorityFunc(sortOrder int) func(a, b int) int {
+	return func(a, b int) int {
+		taskA := service.getTask(a)
+		taskB := service.getTask(b)
+
+		taskAPriority := min(taskA.Priority, taskA.InheritedPriority)
+		taskBPriority := min(taskB.Priority, taskB.InheritedPriority)
+
+		order := 0
+
+		if taskAPriority < taskBPriority {
+			order = -1
+		} else if taskAPriority > taskBPriority {
+			order = 1
+		}
+
+		if sortOrder == sortOrderDesc {
+			return order * -1
+		}
+
+		return order
+	}
+}

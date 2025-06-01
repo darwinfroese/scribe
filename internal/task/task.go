@@ -17,8 +17,11 @@ const (
 	priorityLow
 
 	SortOrderNone = iota
-	SortOrderCompletedDateDesc
 	SortOrderCompletedDateAsc
+	SortOrderCompletedDateDesc
+	SortOrderPriorityAsc
+	SortOrderPriorityDesc
+	SortOrderManual
 )
 
 // task is the internal task structure used for managing task details
@@ -33,6 +36,8 @@ type task struct {
 	InheritedPriority int       `json:"inherited_priority"`
 	Description       string    `json:"description"`
 	CompletedAt       time.Time `json:"completed_at"`
+
+	SortIndex int `json:"sort_index"`
 
 	HasParent bool  `json:"has_parent"`
 	Parent    int   `json:"parent"`
@@ -165,10 +170,10 @@ func (service *Service) GetCompletedTaskIDs(ordering int) []int {
 	}
 
 	switch ordering {
-	case SortOrderCompletedDateDesc:
-		slices.SortFunc(ids, service.sortOrderCompletedDateFunc(sortOrderDesc))
 	case SortOrderCompletedDateAsc:
 		slices.SortFunc(ids, service.sortOrderCompletedDateFunc(sortOrderAsc))
+	case SortOrderCompletedDateDesc:
+		slices.SortFunc(ids, service.sortOrderCompletedDateFunc(sortOrderDesc))
 	}
 
 	return ids
@@ -190,13 +195,20 @@ func (service *Service) GetCompletedTaskIDsForSession(id int) []int {
 	return ids
 }
 
-func (service *Service) GetIncompleteTaskIDs() []int {
+func (service *Service) GetIncompleteTaskIDs(ordering int) []int {
 	ids := []int{}
 
 	for _, task := range service.storage.Tasks.Tasks {
 		if !task.Completed {
 			ids = append(ids, task.ID)
 		}
+	}
+
+	switch ordering {
+	case SortOrderPriorityAsc:
+		slices.SortFunc(ids, service.sortOrderPriorityFunc(sortOrderAsc))
+	case SortOrderPriorityDesc:
+		slices.SortFunc(ids, service.sortOrderPriorityFunc(sortOrderDesc))
 	}
 
 	return ids
@@ -241,10 +253,23 @@ func (service *Service) GetAllParents() []int {
 	return parents
 }
 
-func (service *Service) GetChildren(id int) []int {
+func (service *Service) GetChildren(id, ordering int) []int {
 	task := service.getTask(id)
 
-	return task.Children
+	children := task.Children
+
+	switch ordering {
+	case SortOrderCompletedDateAsc:
+		slices.SortFunc(children, service.sortOrderCompletedDateFunc(sortOrderAsc))
+	case SortOrderCompletedDateDesc:
+		slices.SortFunc(children, service.sortOrderCompletedDateFunc(sortOrderAsc))
+	case SortOrderPriorityAsc:
+		slices.SortFunc(children, service.sortOrderPriorityFunc(sortOrderAsc))
+	case SortOrderPriorityDesc:
+		slices.SortFunc(children, service.sortOrderPriorityFunc(sortOrderDesc))
+	}
+
+	return children
 }
 
 func (service *Service) ToggleComplete(id int) {

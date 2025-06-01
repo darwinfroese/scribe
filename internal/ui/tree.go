@@ -63,22 +63,22 @@ func (ui *UI) refreshTrees() {
 func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 	var ids []int
 
-	if filter == hideCompleted {
-		ids = ui.taskService.GetIncompleteTaskIDs()
+	sortOrder := Task.SortOrderNone
+
+	if filter {
+		sortOrder = ui.todoListSortOrder
+		ids = ui.taskService.GetIncompleteTaskIDs(sortOrder)
 	} else {
-		ids = ui.taskService.GetCompletedTaskIDs(Task.SortOrderCompletedDateDesc)
+		sortOrder = Task.SortOrderCompletedDateDesc
+		ids = ui.taskService.GetCompletedTaskIDs(sortOrder)
 	}
 
 	tree.GetRoot().ClearChildren()
 
 	for _, id := range ids {
-		if ui.taskService.IsCompleted(id) == filter {
-			continue
-		}
-
 		if !ui.taskService.HasParent(id) {
 			// children should be caught recursively
-			ui.addNode(tree.GetRoot(), id)
+			ui.addNode(tree.GetRoot(), id, sortOrder)
 		}
 	}
 
@@ -97,7 +97,7 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 	}
 }
 
-func (ui *UI) addNode(base *tview.TreeNode, id int) {
+func (ui *UI) addNode(base *tview.TreeNode, id, sortOrder int) {
 	text := ui.taskService.DisplayString(id)
 	task := &task{id, text}
 
@@ -109,10 +109,10 @@ func (ui *UI) addNode(base *tview.TreeNode, id int) {
 	base.AddChild(node)
 
 	if ui.taskService.HasChildren(id) {
-		children := ui.taskService.GetChildren(id)
+		children := ui.taskService.GetChildren(id, sortOrder)
 
 		for _, child := range children {
-			ui.addNode(node, child)
+			ui.addNode(node, child, sortOrder)
 		}
 	}
 }
@@ -171,6 +171,16 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 				return nil
 			}
 		}
+
+		return nil
+	case 'S':
+		ui.todoListSortOrder = Task.SortOrderPriorityDesc
+		ui.refresh()
+
+		return nil
+	case 's':
+		ui.todoListSortOrder = Task.SortOrderPriorityAsc
+		ui.refresh()
 
 		return nil
 	case 'e':

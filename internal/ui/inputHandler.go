@@ -4,7 +4,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-// this is our entrypoint for handling all inputs
+// listInputHandler is our entrypoint for handling all inputs
 func (ui *UI) listInputHandler() func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		if !ui.sessionListFocused {
