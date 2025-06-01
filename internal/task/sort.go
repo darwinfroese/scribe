@@ -1,6 +1,7 @@
 package task
 
 import (
+	"cmp"
 	"strings"
 	"time"
 )
@@ -20,12 +21,12 @@ func (service *Service) sortOrderCompletedDateFunc(sortOrder int) func(a, b int)
 
 		order := taskADate.Compare(taskBDate)
 
-		if order == 0 {
-			order = strings.Compare(taskA.Description, taskB.Description)
-		}
-
 		if sortOrder == sortOrderDesc {
 			return order * -1
+		}
+
+		if order == 0 {
+			order = strings.Compare(taskA.Description, taskB.Description)
 		}
 
 		return order
@@ -40,16 +41,14 @@ func (service *Service) sortOrderPriorityFunc(sortOrder int) func(a, b int) int 
 		taskAPriority := min(taskA.Priority, taskA.InheritedPriority)
 		taskBPriority := min(taskB.Priority, taskB.InheritedPriority)
 
-		order := 0
-
-		if taskAPriority < taskBPriority {
-			order = -1
-		} else if taskAPriority > taskBPriority {
-			order = 1
-		}
+		order := cmp.Compare(taskAPriority, taskBPriority)
 
 		if sortOrder == sortOrderDesc {
 			return order * -1
+		}
+
+		if order == 0 {
+			order = cmp.Compare(taskA.ID, taskB.ID)
 		}
 
 		return order
