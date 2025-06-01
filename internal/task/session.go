@@ -205,7 +205,7 @@ func (service *Service) planParent(parentID int) {
 	parentPlanned := true
 	for _, childID := range parent.Children {
 		child := service.getTask(childID)
-		if !child.Planned {
+		if !child.Planned && !child.Completed {
 			parentPlanned = false
 			break
 		}
@@ -233,7 +233,7 @@ func (service *Service) planAllChildren(planned bool, parentID int, children []i
 
 	for _, childID := range children {
 		child := service.getTask(childID)
-		if child.Planned == parent.Planned {
+		if child.Planned == parent.Planned || child.Completed {
 			continue
 		}
 

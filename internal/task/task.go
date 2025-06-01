@@ -129,6 +129,11 @@ func (service *Service) AddChildTask(description string, priority int, parentDis
 				parentTask.InheritedPriority = ttask.Priority
 			}
 
+			if parentTask.Planned {
+				parentTask.Planned = false
+				service.unplanTask(parentTask.ID)
+			}
+
 			service.updateTask(parentTask)
 			break
 		}
