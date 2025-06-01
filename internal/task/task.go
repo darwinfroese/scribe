@@ -253,6 +253,12 @@ func (service *Service) ToggleComplete(id int) {
 			task.Completed = !task.Completed
 			task.CompletedAt = time.Now()
 
+			if !task.Completed && len(task.Children) > 0 {
+				service.resetTask(task)
+				service.write()
+				return
+			}
+
 			if task.HasParent {
 				service.completeParent(task)
 				service.adjustParentPriority(task)
@@ -529,6 +535,21 @@ func (service *Service) updateTask(task *task) {
 			return
 		}
 	}
+}
+
+func (service *Service) resetTask(task *task) {
+	task.Planned = false
+	task.Completed = false
+
+	for _, child := range task.Children {
+		childTask := service.getTask(child)
+		childTask.Planned = false
+		childTask.Completed = false
+
+		service.updateTask(childTask)
+	}
+
+	service.updateTask(task)
 }
 
 func (service *Service) write() {
