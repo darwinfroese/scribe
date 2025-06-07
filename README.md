@@ -1,6 +1,6 @@
 # Scribe
 
-> Scribe is currently in active development.
+> Scribe is currently in active development and not all planned functionality is currently implemented.
 
 Scribe is a local-only, TUI project management tool built for managing multiple projects. Rather than being
 a typical project management or todo list application focused on "what needs to be done" and "what has been done"
