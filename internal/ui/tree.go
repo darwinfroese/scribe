@@ -9,6 +9,10 @@ import (
 	Task "github.com/darwinfroese/scribe/internal/task"
 )
 
+const (
+	parentTreeLevel = 1
+)
+
 type tree struct {
 	*tview.TreeView
 
@@ -17,12 +21,91 @@ type tree struct {
 }
 
 func (ui *UI) selectNextClosest(tree *tree, node *tview.TreeNode) {
-	// if we are deleting a child, select the next child (favor up)
-	// if we are deleting the only child, select the parent
-	// if we are deleting a top level item, select the next top level item (favor up)
+	if node.GetLevel() == parentTreeLevel {
+		ui.selectNextClosestParent(tree, node)
+		return
+	}
+
+	ui.selectNextClosestChild(tree, node)
+}
+
+func (ui *UI) selectNextClosestParent(tree *tree, node *tview.TreeNode) {
+	parents := tree.GetRoot().GetChildren()
+
+	// we should end up with a "No Tasks!" selection when this returns
+	if len(parents) == 1 {
+		return
+	}
+
+	if parents[0] == node {
+		tree.focusedNode = parents[1]
+		tree.SetCurrentNode(parents[1])
+		return
+	}
+
+	if parents[len(parents)-1] == node {
+		tree.focusedNode = parents[len(parents)-2]
+		tree.SetCurrentNode(parents[len(parents)-2])
+		return
+	}
+
+	for idx, parent := range parents {
+		if parent == node {
+			tree.focusedNode = parents[idx-1]
+			tree.SetCurrentNode(parents[idx-1])
+			return
+		}
+	}
+}
+
+func (ui *UI) selectNextClosestChild(tree *tree, node *tview.TreeNode) {
+	parents := tree.GetRoot().GetChildren()
+	var children []*tview.TreeNode
+	var parent *tview.TreeNode
+
+	for _, prnt := range parents {
+		pChildren := prnt.GetChildren()
+
+		if slices.Contains(pChildren, node) {
+			children = pChildren
+			parent = prnt
+			break
+		}
+	}
+
+	if len(children) == 1 {
+		tree.focusedNode = parent
+		tree.SetCurrentNode(parent)
+		return
+	}
+
+	if children[0] == node {
+		tree.focusedNode = children[1]
+		tree.SetCurrentNode(children[1])
+		return
+	}
+
+	if children[len(children)-1] == node {
+		tree.focusedNode = children[len(children)-2]
+		tree.SetCurrentNode(children[len(children)-2])
+		return
+	}
+
+	for idx, child := range children {
+		if child == node {
+			tree.focusedNode = children[idx-1]
+			tree.SetCurrentNode(children[idx-1])
+			return
+		}
+	}
 }
 
 func (ui *UI) setCurrentNode(t *tree, node *tview.TreeNode) {
+	if node.GetReference() == nil {
+		t.SetCurrentNode(node)
+		return
+	}
+
 	task := node.GetReference().(*task)
 	root := t.GetRoot()
 
@@ -41,8 +124,7 @@ func (ui *UI) setCurrentNode(t *tree, node *tview.TreeNode) {
 	if target != nil {
 		t.SetCurrentNode(target)
 	} else {
-		// TODO: when we have an "order" field select the next closest in the order
-		t.SetCurrentNode(root.GetChildren()[0])
+		ui.selectNextClosest(t, node)
 	}
 }
 
@@ -68,8 +150,7 @@ func (ui *UI) refreshTrees() {
 
 func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 	var ids []int
-
-	sortOrder := Task.SortOrderNone
+	var sortOrder int
 
 	if filter {
 		sortOrder = ui.todoListSortOrder
