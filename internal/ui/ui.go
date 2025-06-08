@@ -214,11 +214,11 @@ func (ui *UI) createTasksFromIDs(ids []int) []*task {
 }
 
 func (ui *UI) parseColors(text string) string {
-	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityCriticalColorKey), ui.theme.PriorityCritical)
-	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityHighColorKey), ui.theme.PriorityHigh)
-	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityMediumColorKey), ui.theme.PriorityMedium)
-	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityLowColorKey), ui.theme.PriorityLow)
-	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.SubTextColorKey), ui.theme.SubText)
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityCriticalColorKey), fmt.Sprintf("%s::", ui.theme.PriorityCritical))
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityHighColorKey), fmt.Sprintf("%s::", ui.theme.PriorityHigh))
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityMediumColorKey), fmt.Sprintf("%s::", ui.theme.PriorityMedium))
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityLowColorKey), fmt.Sprintf("%s::", ui.theme.PriorityLow))
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.SubTextColorKey), fmt.Sprintf("%s::", ui.theme.SubText))
 
 	return text
 }

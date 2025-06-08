@@ -1,14 +1,17 @@
 package theme
 
 import (
+	"reflect"
 	"strconv"
 
 	"github.com/gdamore/tcell/v2"
 )
 
 const (
-	darkThemeKey   = "dark"
-	lightThemeKey  = "light"
+	darkThemeKey    = "dark"
+	lightThemeKey   = "light"
+	prairieThemeKey = "prairie"
+
 	customThemeKey = "custom"
 
 	fallbackColor = 0x000000
@@ -33,25 +36,12 @@ type Theme struct {
 	PriorityCritical string
 }
 
-// theme.PrimitiveBackgroundColor = tcell.NewHexColor(0xfff0d1)
-// theme.BorderColor = tcell.NewHexColor(0x0065ad)
-// theme.PrimaryTextColor = tcell.NewHexColor(0x1a0b00)
-// theme.SecondaryTextColor = tcell.NewHexColor(0x1a0b00)
-// theme.TertiaryTextColor = tcell.NewHexColor(0x1a0b00)
-// theme.TitleColor = tcell.NewHexColor(0x1a0b00)
-// theme.BackgroundFocus = tcell.NewHexColor(0xffe5b3)
+func Load(theme *Theme) *Theme {
+	base := getBaseTheme(theme.Base)
 
-func Load(key string) *Theme {
-	switch key {
-	case customThemeKey:
-		return custom()
-	case lightThemeKey:
-		return light()
-	case darkThemeKey:
-		return dark()
-	}
+	override(base, theme)
 
-	return dark()
+	return base
 }
 
 func Color(color string) tcell.Color {
@@ -62,4 +52,37 @@ func Color(color string) tcell.Color {
 	}
 
 	return tcell.NewHexColor(fallbackColor)
+}
+
+func getBaseTheme(key string) *Theme {
+	switch key {
+	case customThemeKey:
+		return custom()
+	case lightThemeKey:
+		return light()
+	case darkThemeKey:
+		return dark()
+	case prairieThemeKey:
+		return prairie()
+	}
+
+	return dark()
+}
+
+func override(base, theme *Theme) {
+	themeElem := reflect.ValueOf(theme).Elem()
+	baseElem := reflect.ValueOf(base).Elem()
+
+	for i := range themeElem.NumField() {
+		themeField := themeElem.Field(i)
+
+		if themeField.IsZero() {
+			continue
+		}
+
+		baseField := baseElem.Field(i)
+		if baseField.CanSet() {
+			baseField.Set(themeField)
+		}
+	}
 }

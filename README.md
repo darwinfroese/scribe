@@ -14,6 +14,7 @@ important context to what and why you were working on a project.
     - [Note Taking](#note-taking)
     - [Reporting](#reporting)
 - [Installing](#installing-scribe)
+- [Configuring Scribe](#configuring-scribe)
 - [Using Scribe](#using-scribe)
     - [Running Scribe Locally](#running-scribe-locally)
     - [Running Scribe Globally](#running-scribe-globally)
@@ -47,6 +48,36 @@ Scribe can be installed using the `go install` tool by running the command `go i
 Scribe can also be installed by downloading the binary for you respective operating system from the [releases](https://github.com/darwinfroese/scribe/releases/)
 tab and putting it in a folder on your `PATH`.
 
+## Configuring Scribe
+
+Scribe can be configued by creating a `scribe.toml` file in `~/.config/scribe/` (or `%APPDATA%/scribe/scribe.toml` on windows). The config file
+has the following format:
+
+```toml
+[theme]
+base = "dark"           # the base theme to use
+
+# the following colors will override base theme values, if set
+background = ""         # the background color
+backgroundfocus = ""    # the background color for elements when they are focused
+text = ""               # the text color
+textfocus = ""          # the text color for elements when they are focused
+subtext = ""            # the subtext color (date when a task is completed)
+border = ""             # the border color
+prioritylow = ""        # the color of the "low" prioirty
+prioritymedium = ""     # the color of the "medium" priority
+priorityhigh = ""       # the color of the "high" priority
+prioritycritical = ""   # the color of the "critical" priority
+```
+
+### Base Themes
+
+The following base themes are available:
+- **dark**: a simple dark theme, the default color theme for scribe
+- **light**: a simple light theme
+- **prairie**: a color theme based on the [prairie](https://github.com/darwinfroese/prairie) theme
+- **custom**: a simple black/white color theme meant for defining a custom theme
+
 ## Using Scribe
 
 ### Running Scribe Locally
@@ -76,6 +107,8 @@ The following keybinds are available in Scribe:
 - **ctrl+hjkl**: navigates between panes
 - **tab/shift+tab**: navigates between fields/buttons in dialogs
 - **enter**: interacts with buttons or dropdowns
+- **escape**: will close dialogs
+- **q**: will exit scribe
 
 ### Interaction
 - **a**: opens the "add task" dialog

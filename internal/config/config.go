@@ -2,9 +2,12 @@ package config
 
 import (
 	"errors"
+	"io"
+	"log"
 	"os"
 
 	"github.com/darwinfroese/scribe/internal/theme"
+	"github.com/pelletier/go-toml"
 )
 
 type Config struct {
@@ -13,21 +16,51 @@ type Config struct {
 
 func Load() *Config {
 	path := getConfigPath()
+	config := &Config{}
 
 	_, err := os.Stat(path)
 	if !errors.Is(err, os.ErrNotExist) && err != nil {
-		return defaults()
+		config.defaults()
+		return config
 	}
 
 	if errors.Is(err, os.ErrNotExist) {
-		return defaults()
+		config.defaults()
+		return config
 	}
 
-	return &Config{}
+	file, err := os.Open(path)
+	if err != nil {
+		config.defaults()
+		return config
+	}
+
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	contents, err := io.ReadAll(file)
+	if err != nil {
+		config.defaults()
+		return config
+	}
+
+	config.parse(contents)
+	config.Theme = theme.Load(config.Theme)
+
+	return config
 }
 
-func defaults() *Config {
-	return &Config{
-		Theme: theme.Load("default"),
+func (config *Config) defaults() {
+	config.Theme = theme.Load(&theme.Theme{Base: "default"})
+}
+
+func (config *Config) parse(contents []byte) {
+	err := toml.Unmarshal(contents, config)
+	if err != nil {
+		config.defaults()
 	}
 }
