@@ -70,14 +70,14 @@ commands are available:
 ## Keybindings
 The following keybinds are available in Scribe:
 
-### navigation
+### Navigation
 - **arrow keys**: navigates between items in the lists
 - **hjkl**: navigates between items in the list
 - **ctrl+hjkl**: navigates between panes
 - **tab/shift+tab**: navigates between fields/buttons in dialogs
 - **enter**: interacts with buttons or dropdowns
 
-### interaction
+### Interaction
 - **a**: opens the "add task" dialog
 - **A (shift+a)**: opens the "add child task" dialog (defaults to the current task as the parent)
 - **e**: opens the "edit task" dialog for the current task

@@ -8,6 +8,7 @@ import (
 	"github.com/darwinfroese/scribe/cmd"
 	"github.com/darwinfroese/scribe/cmd/report"
 	"github.com/darwinfroese/scribe/cmd/scribe"
+	"github.com/darwinfroese/scribe/internal/config"
 )
 
 func main() {
@@ -24,8 +25,10 @@ func main() {
 	reportCommand.BoolVar(&args.List, "list", false, "list all session dates")
 	reportCommand.BoolVar(&args.Global, "global", false, "runs scribe with the global database instead of the local database")
 
+	cfg := config.Load()
+
 	if len(os.Args) == 1 {
-		scribe.Scribe(args)
+		scribe.Scribe(&args, cfg)
 		return
 	}
 
@@ -44,6 +47,6 @@ func main() {
 		if err := scribeCommand.Parse(os.Args[1:]); err != nil {
 			panic(err)
 		}
-		scribe.Scribe(args)
+		scribe.Scribe(&args, cfg)
 	}
 }

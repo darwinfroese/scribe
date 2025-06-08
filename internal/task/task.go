@@ -22,6 +22,13 @@ const (
 	SortOrderPriorityAsc
 	SortOrderPriorityDesc
 	SortOrderManual
+
+	PriorityCriticalColorKey = "critical"
+	PriorityHighColorKey     = "high"
+	PriorityMediumColorKey   = "medium"
+	PriorityLowColorKey      = "low"
+
+	SubTextColorKey = "subtext"
 )
 
 // task is the internal task structure used for managing task details
@@ -444,7 +451,7 @@ func (service *Service) DisplayString(id int) string {
 
 	if task.Completed {
 		prefix = "✓"
-		display = fmt.Sprintf("[::i]%s[::I] [gray::i]%s[white::I]", display, task.CompletedAt.Format(time.DateOnly))
+		display = fmt.Sprintf("[::i]%s[::I] [%s::i]%s[white::I]", display, SubTextColorKey, task.CompletedAt.Format(time.DateOnly))
 	}
 
 	return fmt.Sprintf("%s %s", prefix, display)
@@ -586,7 +593,7 @@ func (service *Service) write() {
 
 	err = service.db.Write(content)
 	if err != nil {
-		log.Fatal("unable to wirte the database content: ", err)
+		log.Fatal("unable to write the database content: ", err)
 	}
 }
 
@@ -608,14 +615,14 @@ func getPriorityString(priority int) string {
 func getPriorityColor(priority int) string {
 	switch priority {
 	case priorityCritical:
-		return "red"
+		return PriorityCriticalColorKey
 	case priorityHigh:
-		return "yellow"
+		return PriorityHighColorKey
 	case priorityMedium:
-		return "green"
+		return PriorityMediumColorKey
 	case priorityLow:
-		return "blue"
+		return PriorityLowColorKey
 	default:
-		return "gray"
+		return "black"
 	}
 }

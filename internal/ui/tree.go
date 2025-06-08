@@ -7,6 +7,7 @@ import (
 	"github.com/rivo/tview"
 
 	Task "github.com/darwinfroese/scribe/internal/task"
+	"github.com/darwinfroese/scribe/internal/theme"
 )
 
 const (
@@ -171,7 +172,7 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 
 	if len(tree.GetRoot().GetChildren()) == 0 {
 		node := tview.NewTreeNode("No Tasks!").
-			SetSelectedTextStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
+			SetSelectedTextStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).Background(theme.Color(ui.theme.BackgroundFocus)))
 		tree.GetRoot().AddChild(node)
 		tree.focusedNode = node
 
@@ -185,12 +186,12 @@ func (ui *UI) refreshTaskTree(tree *tree, filter bool) {
 }
 
 func (ui *UI) addNode(base *tview.TreeNode, id, sortOrder int) {
-	text := ui.taskService.DisplayString(id)
+	text := ui.parseColors(ui.taskService.DisplayString(id))
 	task := &task{id, text}
 
-	listItemText := ui.taskService.DisplayString(id)
+	listItemText := ui.parseColors(ui.taskService.DisplayString(id))
 	node := tview.NewTreeNode(listItemText).
-		SetSelectedTextStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3))).
+		SetSelectedTextStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).Background(theme.Color(ui.theme.BackgroundFocus))).
 		SetReference(task)
 
 	base.AddChild(node)
@@ -290,7 +291,7 @@ func (ui *UI) wipInputHandler(event *tcell.EventKey) *tcell.EventKey {
 		task := selected.(*task)
 		ui.taskService.TogglePlanTask(task.id)
 
-		task.text = ui.taskService.DisplayString(task.id)
+		task.text = ui.parseColors(ui.taskService.DisplayString(task.id))
 
 		ui.todoList.GetCurrentNode().SetText(task.text)
 		ui.todoList.GetCurrentNode().SetReference(task)

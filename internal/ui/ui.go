@@ -2,11 +2,13 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	Task "github.com/darwinfroese/scribe/internal/task"
+	"github.com/darwinfroese/scribe/internal/theme"
 )
 
 const (
@@ -45,6 +47,8 @@ type UI struct {
 	activeForm     *form
 
 	sessionIDs []int
+
+	theme *theme.Theme
 }
 
 type task struct {
@@ -88,20 +92,24 @@ type TaskService interface {
 	GetNote() string
 }
 
-func New(taskService TaskService) *UI {
-	theme := tview.Styles
+func New(taskService TaskService, userTheme *theme.Theme) *UI {
+	style := tview.Styles
 
-	theme.PrimitiveBackgroundColor = tcell.NewHexColor(0xfff0d1)
-	theme.BorderColor = tcell.NewHexColor(0x0065ad)
-	theme.PrimaryTextColor = tcell.NewHexColor(0x1a0b00)
-	theme.SecondaryTextColor = tcell.NewHexColor(0x1a0b00)
-	theme.TertiaryTextColor = tcell.NewHexColor(0x1a0b00)
-	theme.TitleColor = tcell.NewHexColor(0x1a0b00)
-	tview.Styles = theme
+	style.PrimitiveBackgroundColor = theme.Color(userTheme.Background)
+
+	style.BorderColor = theme.Color(userTheme.Border)
+
+	style.PrimaryTextColor = theme.Color(userTheme.Text)
+	style.SecondaryTextColor = theme.Color(userTheme.Text)
+	style.TertiaryTextColor = theme.Color(userTheme.Text)
+	style.TitleColor = theme.Color(userTheme.Text)
+
+	tview.Styles = style
 
 	ui := &UI{
 		taskService:       taskService,
 		todoListSortOrder: Task.SortOrderNone,
+		theme:             userTheme,
 	}
 
 	ui.sessionIDs = ui.taskService.GetAllSessionIDs(true)
@@ -152,7 +160,10 @@ func (ui *UI) build() {
 			ShowSecondaryText(false).
 			SetSelectedFocusOnly(true).
 			SetHighlightFullLine(true).
-			SetSelectedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3))),
+			SetSelectedStyle(
+				tcell.StyleDefault.
+					Foreground(theme.Color(ui.theme.TextFocus)).
+					Background(theme.Color(ui.theme.BackgroundFocus))),
 	}
 	ui.sessionList.SetBorder(true).SetTitle(" Sessions ")
 
@@ -194,12 +205,22 @@ func (ui *UI) createTasksFromIDs(ids []int) []*task {
 	tasks := []*task{}
 
 	for _, id := range ids {
-		text := ui.taskService.DisplayString(id)
+		text := ui.parseColors(ui.taskService.DisplayString(id))
 
 		tasks = append(tasks, &task{id, text})
 	}
 
 	return tasks
+}
+
+func (ui *UI) parseColors(text string) string {
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityCriticalColorKey), ui.theme.PriorityCritical)
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityHighColorKey), ui.theme.PriorityHigh)
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityMediumColorKey), ui.theme.PriorityMedium)
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.PriorityLowColorKey), ui.theme.PriorityLow)
+	text = strings.ReplaceAll(text, fmt.Sprintf("%s::", Task.SubTextColorKey), ui.theme.SubText)
+
+	return text
 }
 
 func createTree() *tview.TreeView {

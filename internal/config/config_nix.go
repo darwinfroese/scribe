@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	configPath = ".config/scribe.yml"
+	configPath = ".config/scribe/scribe.yml"
 )
 
 func getConfigPath() string {

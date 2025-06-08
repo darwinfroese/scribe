@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 
+	"github.com/darwinfroese/scribe/internal/theme"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -24,11 +25,18 @@ func (ui *UI) createForm(action string, name string, childForm bool, actionHandl
 	if childForm {
 		parent := tview.NewDropDown().SetLabel("Parent:").SetOptions([]string{}, nil)
 
-		parent.SetFocusedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorSlateGray))
+		parent.SetFocusedStyle(
+			tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).
+				Background(theme.Color(ui.theme.BackgroundFocus)),
+		)
+
 		parent.SetListStyles(
-			tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tview.Styles.PrimitiveBackgroundColor),
-			tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
-		parent.SetPrefixStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
+			// unselected
+			tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.Background)),
+			// selected
+			tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).Background(theme.Color(ui.theme.BackgroundFocus)))
+
+		parent.SetPrefixStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.Background)))
 
 		form.AddFormItem(parent)
 	}
@@ -38,11 +46,13 @@ func (ui *UI) createForm(action string, name string, childForm bool, actionHandl
 
 	dropDown := tview.NewDropDown().SetLabel("Priority:").SetOptions([]string{"Critical", "High", "Medium", "Low"}, nil)
 
-	dropDown.SetFocusedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorSlateGray))
+	dropDown.SetFocusedStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).Background(theme.Color(ui.theme.BackgroundFocus)))
 	dropDown.SetListStyles(
-		tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tview.Styles.PrimitiveBackgroundColor),
-		tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
-	dropDown.SetPrefixStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.NewHexColor(0xffe5b3)))
+		// unselected
+		tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.Background)),
+		// selected
+		tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).Background(theme.Color(ui.theme.BackgroundFocus)))
+	dropDown.SetPrefixStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.Background)))
 
 	form.AddFormItem(dropDown)
 	form.AddButton("Save", actionHandler(form)).
@@ -50,11 +60,11 @@ func (ui *UI) createForm(action string, name string, childForm bool, actionHandl
 			ui.hideForm(name)
 		})
 
-	form.SetBorder(true).SetTitle(fmt.Sprintf("%s Task", action))
+	form.SetBorder(true).SetTitle(fmt.Sprintf(" %s Task ", action))
 
-	form.SetFieldStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorLightGray))
-	form.SetButtonStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tview.Styles.PrimitiveBackgroundColor))
-	form.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorSlateGray))
+	form.SetFieldStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.BackgroundFocus)))
+	form.SetButtonStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.Background)))
+	form.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).Background(theme.Color(ui.theme.BackgroundFocus)))
 
 	form.SetInputCapture(ui.formInputHandler)
 
@@ -78,9 +88,9 @@ func (ui *UI) createNoteForm(name string, actionHandler formActionHandler) *form
 
 	form.SetBorder(true).SetTitle("Notes")
 
-	form.SetFieldStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorLightGray))
-	form.SetButtonStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tview.Styles.PrimitiveBackgroundColor))
-	form.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(tview.Styles.PrimaryTextColor).Background(tcell.ColorSlateGray))
+	form.SetFieldStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.BackgroundFocus)))
+	form.SetButtonStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.Background)))
+	form.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).Background(theme.Color(ui.theme.BackgroundFocus)))
 
 	form.SetInputCapture(ui.formInputHandler)
 
