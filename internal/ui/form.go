@@ -62,7 +62,7 @@ func (ui *UI) createForm(action string, name string, childForm bool, actionHandl
 
 	form.SetBorder(true).SetTitle(fmt.Sprintf(" %s Task ", action))
 
-	form.SetFieldStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.BackgroundFocus)))
+	form.SetFieldStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.InputBackground)))
 	form.SetButtonStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.Background)))
 	form.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).Background(theme.Color(ui.theme.BackgroundFocus)))
 
@@ -86,9 +86,9 @@ func (ui *UI) createNoteForm(name string, actionHandler formActionHandler) *form
 			ui.hideForm(name)
 		})
 
-	form.SetBorder(true).SetTitle("Notes")
+	form.SetBorder(true).SetTitle(" Notes ")
 
-	form.SetFieldStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.BackgroundFocus)))
+	form.SetFieldStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.InputBackground)))
 	form.SetButtonStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.Text)).Background(theme.Color(ui.theme.Background)))
 	form.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(theme.Color(ui.theme.TextFocus)).Background(theme.Color(ui.theme.BackgroundFocus)))
 

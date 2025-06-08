@@ -63,6 +63,7 @@ backgroundfocus = ""    # the background color for elements when they are focuse
 text = ""               # the text color
 textfocus = ""          # the text color for elements when they are focused
 subtext = ""            # the subtext color (date when a task is completed)
+inputbackground = ""    # the background color for unfocused inputs
 border = ""             # the border color
 prioritylow = ""        # the color of the "low" prioirty
 prioritymedium = ""     # the color of the "medium" priority

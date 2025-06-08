@@ -26,7 +26,8 @@ type Theme struct {
 	Text      string
 	TextFocus string
 
-	SubText string
+	SubText         string
+	InputBackground string
 
 	Border string
 

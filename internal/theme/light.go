@@ -8,6 +8,7 @@ func light() *Theme {
 		Text:             "#474747",
 		TextFocus:        "#0A0A0A",
 		SubText:          "#0A0A0A",
+		InputBackground:  "#E8E3CF",
 		Border:           "#0072BB",
 		PriorityLow:      "#33B1FF",
 		PriorityMedium:   "#F4AC45",
