@@ -490,7 +490,7 @@ func (service *Service) EditTask(id int, description string, priority int) {
 
 	if task.HasParent {
 		parent := service.getTask(task.Parent)
-		parent.InheritedPriority = min(task.InheritedPriority, priority)
+		parent.InheritedPriority = min(parent.InheritedPriority, priority)
 		service.updateTask(parent)
 	}
 
